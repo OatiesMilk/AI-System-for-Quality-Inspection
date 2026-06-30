@@ -29,6 +29,35 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Audit Log</h3>
+
+                @if ($auditLogs->isEmpty())
+                    <p class="text-gray-500">No activity recorded yet.</p>
+                @else
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="text-left text-xs font-medium text-gray-500 uppercase">
+                                <th class="py-2 pr-4">User</th>
+                                <th class="py-2 pr-4">Action</th>
+                                <th class="py-2 pr-4">IP Address</th>
+                                <th class="py-2 pr-4">When</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach ($auditLogs as $log)
+                                <tr>
+                                    <td class="py-2 pr-4">{{ $log->user?->name ?? 'System' }}</td>
+                                    <td class="py-2 pr-4">{{ $log->action }}</td>
+                                    <td class="py-2 pr-4">{{ $log->ip_address ?? '—' }}</td>
+                                    <td class="py-2 pr-4">{{ $log->created_at->diffForHumans() }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
         </div>
     </div>
 </x-app-layout>
