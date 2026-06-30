@@ -119,7 +119,21 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('dashboards.constructor', compact('reworkInspections'));
+        $resolvedReworks = Inspection::with('batch', 'defects')
+            ->where('action', 'rework')
+            ->whereNotNull('reworked_at')
+            ->latest('reworked_at')
+            ->limit(10)
+            ->get();
+
+        return view('dashboards.constructor', compact('reworkInspections', 'resolvedReworks'));
+    }
+
+    public function showConstructorInspection(Inspection $inspection): View
+    {
+        $inspection->load('batch', 'defects');
+
+        return view('dashboards.constructor-inspection', compact('inspection'));
     }
 
     public function resolveRework(Request $request, Inspection $inspection): RedirectResponse
