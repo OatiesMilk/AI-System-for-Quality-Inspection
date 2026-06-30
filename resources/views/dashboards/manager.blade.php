@@ -73,6 +73,64 @@
             </div>
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">AI Override Analytics (Diagnostic Analytics)</h3>
+
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="border rounded-lg p-4">
+                        <div class="text-sm text-gray-500">Reviewed Inspections</div>
+                        <div class="text-2xl font-semibold text-gray-900">{{ $reviewedCount }}</div>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="text-sm text-gray-500">AI Overridden</div>
+                        <div class="text-2xl font-semibold text-gray-900">{{ $overriddenCount }}</div>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="text-sm text-gray-500">Override Rate</div>
+                        <div class="text-2xl font-semibold text-gray-900">{{ $overrideRate }}%</div>
+                    </div>
+                </div>
+
+                @if ($aiOverrideCounts->isEmpty())
+                    <p class="text-gray-500">No AI overrides recorded yet.</p>
+                @else
+                    <div class="max-w-xl">
+                        <canvas id="aiOverrideChart"
+                            data-labels="{{ $aiOverrideCounts->keys()->map(fn ($type) => str_replace('_', ' ', $type))->toJson() }}"
+                            data-values="{{ $aiOverrideCounts->values()->toJson() }}"></canvas>
+                    </div>
+
+                    @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const canvas = document.getElementById('aiOverrideChart');
+                                if (!canvas || !window.Chart) return;
+
+                                new window.Chart(canvas, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: JSON.parse(canvas.dataset.labels),
+                                        datasets: [{
+                                            label: 'Overrides (false positives) by defect type',
+                                            data: JSON.parse(canvas.dataset.values),
+                                            backgroundColor: '#ef4444',
+                                        }],
+                                    },
+                                    options: {
+                                        scales: {
+                                            y: { beginAtZero: true, ticks: { precision: 0 } },
+                                        },
+                                        plugins: {
+                                            legend: { display: false },
+                                        },
+                                    },
+                                });
+                            });
+                        </script>
+                    @endpush
+                @endif
+            </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Batches</h3>
 
                 @if ($recentBatches->isEmpty())

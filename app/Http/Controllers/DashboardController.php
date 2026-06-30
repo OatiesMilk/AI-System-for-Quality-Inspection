@@ -27,8 +27,15 @@ class DashboardController extends Controller
         };
     }
 
-    public function inspector(): View
+    public function inspector(Request $request): View
     {
+        $request->validate([
+            'decision' => ['nullable', 'in:pass,rework,reject'],
+            'ai_override' => ['nullable', 'in:0,1'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
+        ]);
+
         $pendingInspections = Inspection::with('batch')
             ->whereNull('action')
             ->latest()
@@ -37,9 +44,13 @@ class DashboardController extends Controller
 
         $reviewedInspections = Inspection::with('batch', 'inspector')
             ->whereNotNull('action')
+            ->when($request->filled('decision'), fn ($query) => $query->where('action', $request->string('decision')))
+            ->when($request->filled('ai_override'), fn ($query) => $query->where('ai_override', $request->boolean('ai_override')))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('inspected_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('inspected_at', '<=', $request->date('date_to')))
             ->latest('inspected_at')
-            ->limit(10)
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('dashboards.inspector', compact('pendingInspections', 'reviewedInspections'));
     }
@@ -93,9 +104,26 @@ class DashboardController extends Controller
             ->groupBy('defect_type')
             ->pluck('total', 'defect_type');
 
+        $aiOverrideCounts = Defect::query()
+            ->where('confirmed', false)
+            ->selectRaw('defect_type, count(*) as total')
+            ->groupBy('defect_type')
+            ->pluck('total', 'defect_type');
+
+        $reviewedCount = Inspection::whereNotNull('action')->count();
+        $overriddenCount = Inspection::where('ai_override', true)->count();
+        $overrideRate = $reviewedCount > 0 ? round(($overriddenCount / $reviewedCount) * 100, 1) : 0;
+
         $recentBatches = Batch::with('inspections')->latest()->limit(10)->get();
 
-        return view('dashboards.manager', compact('defectCounts', 'recentBatches'));
+        return view('dashboards.manager', compact(
+            'defectCounts',
+            'aiOverrideCounts',
+            'reviewedCount',
+            'overriddenCount',
+            'overrideRate',
+            'recentBatches',
+        ));
     }
 
     public function admin(Request $request): View

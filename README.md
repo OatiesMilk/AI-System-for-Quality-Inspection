@@ -93,12 +93,49 @@ The system has four roles, each with its own dashboard:
 
 | Role | Route | Capabilities |
 |---|---|---|
-| Quality Inspector | `/inspector` | Human-in-the-loop validation of AI-flagged defects, pass/rework/reject decisions |
-| Product Manager | `/manager` | Defect analytics (doughnut chart), batch overview, create inspector/constructor accounts |
-| System Admin | `/admin` | Create/edit any account (including other admins), full audit log |
-| Shoe Constructor | `/constructor` | Rework notifications for batches they assembled, submit reports |
+| Quality Inspector | `/inspector` | Human-in-the-loop validation of AI-flagged defects, pass/rework/reject decisions, filterable review history |
+| Product Manager | `/manager` | Defect analytics, AI override diagnostics, batch overview, create production batches |
+| System Admin | `/admin` | Create/edit any account (including other admins), full audit log with filters |
+| Shoe Constructor | `/constructor` | Rework notifications for batches they assembled, image/defect detail, mark reworks resolved |
 
-To create your first account, register normally via `/register`, then have a System Admin (or directly via `php artisan tinker`) set your `role` column to one of: `quality_inspector`, `product_manager`, `system_admin`, `shoe_constructor`.
+Account creation is restricted to System Admin only. There is no public registration page — to create your first account, run `php artisan db:seed`, which creates one demo account per role (see `database/seeders/DatabaseSeeder.php`), or create one directly via `php artisan tinker`.
+
+## Computer Vision Ingestion API
+
+The YOLO detection pipeline posts inspection results into the system via a machine-to-machine API endpoint, authenticated with a [Laravel Sanctum](https://laravel.com/docs/sanctum) token (not a session login).
+
+**Endpoint:** `POST /api/inspections`
+
+**Auth:** `Authorization: Bearer <token>` header, where the token has the `inspections:create` ability.
+
+**Payload** (`multipart/form-data`, since it includes a file):
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `batch_id` | int | yes | Must reference an existing batch |
+| `checkpoint` | string | yes | `preparation` or `finishing` |
+| `image` | file | yes | The captured inspection photo, max 10MB |
+| `defects[n][defect_type]` | string | no | One of: `scratch`, `cut`, `hole`, `crease`, `excess_glue`, `excess_stitch` |
+| `defects[n][confidence_score]` | float | no | YOLO confidence, 0–1 |
+| `defects[n][bounding_box][x/y/width/height]` | float | no | Fractional coordinates (0–1) of the image |
+
+**Response:** `201 Created` with `{ "message", "inspection_id", "defect_count" }`. The created inspection lands in the Quality Inspector's "Pending Inspections" queue exactly like any other inspection — no separate code path.
+
+### Issuing a token for the YOLO service
+
+Run once (e.g. on the machine hosting the model), and give the resulting token to whoever configures the Python pipeline:
+
+```bash
+php artisan tinker --execute="
+\$service = App\Models\User::firstOrCreate(
+    ['email' => 'yolo-service@cpoint.internal'],
+    ['name' => 'YOLO Detection Service', 'role' => 'system_admin', 'password' => bcrypt(Illuminate\Support\Str::random(40)), 'email_verified_at' => now()]
+);
+echo \$service->createToken('yolo-pipeline', ['inspections:create'])->plainTextToken;
+"
+```
+
+The token is only shown once — store it securely (e.g. in the Python service's own `.env`, never committed to git).
 
 ## Troubleshooting
 

@@ -1,12 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Inspection #'.$inspection->id.' — HITL Validation') }}
+            {{ __('Inspection #'.$inspection->id) }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            <a href="{{ route('dashboard.inspector') }}" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-900 hover:underline">
+                &larr; Back to dashboard
+            </a>
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <dl class="grid grid-cols-3 gap-4 text-sm mb-6">
                     <div>

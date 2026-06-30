@@ -69,6 +69,43 @@ class InspectorDashboardTest extends TestCase
         ]);
     }
 
+    public function test_reviewed_inspections_can_be_filtered_by_decision(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+
+        $passed = $this->makeInspection(['action' => 'pass', 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
+        $reworked = $this->makeInspection(['action' => 'rework', 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
+
+        $response = $this->actingAs($inspector)->get('/inspector?decision=pass');
+
+        $response->assertOk();
+        $response->assertSee($passed->batch->batch_code);
+        $response->assertDontSee($reworked->batch->batch_code);
+    }
+
+    public function test_reviewed_inspections_can_be_filtered_by_ai_override(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+
+        $overridden = $this->makeInspection(['action' => 'pass', 'ai_override' => true, 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
+        $notOverridden = $this->makeInspection(['action' => 'pass', 'ai_override' => false, 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
+
+        $response = $this->actingAs($inspector)->get('/inspector?ai_override=1');
+
+        $response->assertOk();
+        $response->assertSee($overridden->batch->batch_code);
+        $response->assertDontSee($notOverridden->batch->batch_code);
+    }
+
+    public function test_reviewed_inspections_filter_rejects_an_invalid_date(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+
+        $response = $this->actingAs($inspector)->get('/inspector?date_from=not-a-date');
+
+        $response->assertSessionHasErrors('date_from');
+    }
+
     public function test_inspector_can_view_an_inspection_with_its_defects(): void
     {
         $inspector = User::factory()->create(['role' => 'quality_inspector']);

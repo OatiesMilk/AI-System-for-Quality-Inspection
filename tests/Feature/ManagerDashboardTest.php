@@ -50,6 +50,58 @@ class ManagerDashboardTest extends TestCase
         $response->assertSee('scratch');
     }
 
+    public function test_manager_dashboard_shows_ai_override_analytics(): void
+    {
+        $manager = User::factory()->create(['role' => 'product_manager']);
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+
+        $batch = Batch::create([
+            'batch_code' => 'MGR-OVERRIDE',
+            'production_date' => now(),
+            'manufacturing_stage' => 'finishing',
+        ]);
+
+        $overridden = Inspection::create([
+            'batch_id' => $batch->id,
+            'checkpoint' => 'finishing',
+            'action' => 'pass',
+            'ai_override' => true,
+            'inspector_id' => $inspector->id,
+            'inspected_at' => now(),
+        ]);
+
+        Defect::create([
+            'inspection_id' => $overridden->id,
+            'defect_type' => 'hole',
+            'confidence_score' => 0.6,
+            'confirmed' => false,
+        ]);
+
+        $clean = Inspection::create([
+            'batch_id' => $batch->id,
+            'checkpoint' => 'finishing',
+            'action' => 'pass',
+            'ai_override' => false,
+            'inspector_id' => $inspector->id,
+            'inspected_at' => now(),
+        ]);
+
+        Defect::create([
+            'inspection_id' => $clean->id,
+            'defect_type' => 'scratch',
+            'confidence_score' => 0.9,
+            'confirmed' => true,
+        ]);
+
+        $response = $this->actingAs($manager)->get('/manager');
+
+        $response->assertOk();
+        $response->assertViewHas('reviewedCount', 2);
+        $response->assertViewHas('overriddenCount', 1);
+        $response->assertViewHas('overrideRate', 50.0);
+        $response->assertViewHas('aiOverrideCounts', fn ($counts) => $counts->get('hole') === 1 && ! $counts->has('scratch'));
+    }
+
     public function test_manager_cannot_access_user_account_creation(): void
     {
         $manager = User::factory()->create(['role' => 'product_manager']);
