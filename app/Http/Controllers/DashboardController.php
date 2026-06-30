@@ -35,7 +35,13 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('dashboards.inspector', compact('pendingInspections'));
+        $reviewedInspections = Inspection::with('batch', 'inspector')
+            ->whereNotNull('action')
+            ->latest('inspected_at')
+            ->limit(10)
+            ->get();
+
+        return view('dashboards.inspector', compact('pendingInspections', 'reviewedInspections'));
     }
 
     public function showInspection(Inspection $inspection): View
