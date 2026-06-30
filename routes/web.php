@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Manager\BatchController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,10 +23,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:product_manager')->group(function () {
         Route::get('/manager', [DashboardController::class, 'manager'])->name('dashboard.manager');
 
-        Route::get('/manager/users/create', [RegisteredUserController::class, 'create'])
-            ->name('manager.users.create');
-        Route::post('/manager/users', [RegisteredUserController::class, 'store'])
-            ->name('manager.users.store');
+        Route::get('/manager/batches/create', [BatchController::class, 'create'])
+            ->name('manager.batches.create');
+        Route::post('/manager/batches', [BatchController::class, 'store'])
+            ->name('manager.batches.store');
     });
 
     Route::middleware('role:system_admin')->group(function () {

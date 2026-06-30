@@ -14,7 +14,7 @@ class Batch extends Model
     protected $fillable = [
         'batch_code',
         'production_date',
-        'volume',
+        'shift',
         'manufacturing_stage',
         'created_by',
     ];

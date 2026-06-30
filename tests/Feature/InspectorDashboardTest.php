@@ -19,7 +19,6 @@ class InspectorDashboardTest extends TestCase
         $batch = Batch::create([
             'batch_code' => 'TEST-'.fake()->unique()->numerify('###'),
             'production_date' => now(),
-            'volume' => 50,
             'manufacturing_stage' => 'finishing',
         ]);
 

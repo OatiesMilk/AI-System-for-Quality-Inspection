@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'shift',
     ];
 
     public function isRole(string $role): bool

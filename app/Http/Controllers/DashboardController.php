@@ -98,23 +98,43 @@ class DashboardController extends Controller
         return view('dashboards.manager', compact('defectCounts', 'recentBatches'));
     }
 
-    public function admin(): View
+    public function admin(Request $request): View
     {
+        $request->validate([
+            'action' => ['nullable', 'string'],
+            'user_id' => ['nullable', 'integer'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
+        ]);
+
         $users = User::orderBy('role')->orderBy('name')->get();
 
         $auditLogs = AuditLog::with('user')
+            ->when($request->filled('action'), fn ($query) => $query->where('action', $request->string('action')))
+            ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('date_to')))
             ->latest()
-            ->limit(20)
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('dashboards.admin', compact('users', 'auditLogs'));
+        $auditActions = AuditLog::query()
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action');
+
+        return view('dashboards.admin', compact('users', 'auditLogs', 'auditActions'));
     }
 
-    public function constructor(): View
+    public function constructor(Request $request): View
     {
+        $shift = $request->user()->shift;
+
         $reworkInspections = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
             ->whereNull('reworked_at')
+            ->when($shift, fn ($query) => $query->whereHas('batch', fn ($q) => $q->where('shift', $shift)))
             ->latest()
             ->limit(10)
             ->get();
@@ -122,6 +142,7 @@ class DashboardController extends Controller
         $resolvedReworks = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
             ->whereNotNull('reworked_at')
+            ->when($shift, fn ($query) => $query->whereHas('batch', fn ($q) => $q->where('shift', $shift)))
             ->latest('reworked_at')
             ->limit(10)
             ->get();

@@ -15,48 +15,38 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Roles each creating role is permitted to assign to a new account.
-     *
-     * System admins hold the highest privilege per the system's RBAC design and may
-     * create any account, including other admins and product managers. Product managers
-     * are restricted to the operational floor roles they directly staff, so they cannot
-     * mint their own admin or manager peers.
+     * Roles a system admin may assign to a new account. System admins hold the highest
+     * privilege per the system's RBAC design and are the only role permitted to create
+     * accounts, including other admins.
      */
-    private const ROLE_ASSIGNMENT_MATRIX = [
-        'system_admin' => [
-            'quality_inspector',
-            'product_manager',
-            'system_admin',
-            'shoe_constructor',
-        ],
-        'product_manager' => [
-            'quality_inspector',
-            'shoe_constructor',
-        ],
+    private const ASSIGNABLE_ROLES = [
+        'quality_inspector',
+        'product_manager',
+        'system_admin',
+        'shoe_constructor',
     ];
 
     /**
-     * Display the user-creation view, scoped to roles the current user may assign.
+     * Display the user-creation view (system admin only).
      */
-    public function create(Request $request): View
+    public function create(): View
     {
-        return view('auth.register', ['roles' => $this->assignableRolesFor($request)]);
+        return view('auth.register', ['roles' => self::ASSIGNABLE_ROLES]);
     }
 
     /**
-     * Handle an incoming user-creation request from a system admin or product manager.
+     * Handle an incoming user-creation request from a system admin.
      *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
-        $assignableRoles = $this->assignableRolesFor($request);
-
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:'.implode(',', $assignableRoles)],
+            'role' => ['required', 'string', 'in:'.implode(',', self::ASSIGNABLE_ROLES)],
+            'shift' => ['nullable', 'in:am,pm'],
         ]);
 
         $user = User::create([
@@ -64,23 +54,12 @@ class RegisteredUserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'shift' => $validated['role'] === 'shoe_constructor' ? ($validated['shift'] ?? null) : null,
         ]);
 
         event(new Registered($user));
 
-        $redirectRoute = $request->user()->role === 'system_admin'
-            ? 'dashboard.admin'
-            : 'dashboard.manager';
-
-        return redirect()->route($redirectRoute)
+        return redirect()->route('dashboard.admin')
             ->with('status', "Account created for {$user->name}.");
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function assignableRolesFor(Request $request): array
-    {
-        return self::ROLE_ASSIGNMENT_MATRIX[$request->user()->role] ?? [];
     }
 }

@@ -19,16 +19,22 @@ class DatabaseSeeder extends Seeder
             'Quality Inspector' => ['email' => 'inspector@cpoint.test', 'role' => 'quality_inspector'],
             'Product Manager' => ['email' => 'manager@cpoint.test', 'role' => 'product_manager'],
             'System Admin' => ['email' => 'admin@cpoint.test', 'role' => 'system_admin'],
-            'Shoe Constructor' => ['email' => 'constructor@cpoint.test', 'role' => 'shoe_constructor'],
+            'Shoe Constructor' => ['email' => 'constructor@cpoint.test', 'role' => 'shoe_constructor', 'shift' => 'am'],
         ];
 
         foreach ($roles as $name => $attrs) {
-            User::factory()->create([
-                'name' => $name,
-                'email' => $attrs['email'],
-                'role' => $attrs['role'],
-                'password' => bcrypt('password'),
-            ]);
+            User::query()->updateOrCreate(
+                ['email' => $attrs['email']],
+                [
+                    'name' => $name,
+                    'role' => $attrs['role'],
+                    'shift' => $attrs['shift'] ?? null,
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
         }
+
+        $this->call(DemoDataSeeder::class);
     }
 }
