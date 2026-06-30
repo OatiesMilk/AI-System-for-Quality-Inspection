@@ -28,14 +28,47 @@
                 @if ($defectCounts->isEmpty())
                     <p class="text-gray-500">No defect data recorded yet.</p>
                 @else
-                    <ul class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        @foreach ($defectCounts as $type => $total)
-                            <li class="border rounded-lg p-4">
-                                <div class="text-sm text-gray-500 capitalize">{{ str_replace('_', ' ', $type) }}</div>
-                                <div class="text-2xl font-semibold text-gray-900">{{ $total }}</div>
-                            </li>
-                        @endforeach
-                    </ul>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                        <div class="max-w-xs mx-auto">
+                            <canvas id="defectTypeChart"
+                                data-labels="{{ $defectCounts->keys()->map(fn ($type) => str_replace('_', ' ', $type))->toJson() }}"
+                                data-values="{{ $defectCounts->values()->toJson() }}"></canvas>
+                        </div>
+
+                        <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
+                            @foreach ($defectCounts as $type => $total)
+                                <li class="border rounded-lg p-4">
+                                    <div class="text-sm text-gray-500 capitalize">{{ str_replace('_', ' ', $type) }}</div>
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $total }}</div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const canvas = document.getElementById('defectTypeChart');
+                                if (!canvas || !window.Chart) return;
+
+                                new window.Chart(canvas, {
+                                    type: 'doughnut',
+                                    data: {
+                                        labels: JSON.parse(canvas.dataset.labels),
+                                        datasets: [{
+                                            data: JSON.parse(canvas.dataset.values),
+                                            backgroundColor: ['#6366f1', '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7'],
+                                        }],
+                                    },
+                                    options: {
+                                        plugins: {
+                                            legend: { position: 'bottom' },
+                                        },
+                                    },
+                                });
+                            });
+                        </script>
+                    @endpush
                 @endif
             </div>
 
