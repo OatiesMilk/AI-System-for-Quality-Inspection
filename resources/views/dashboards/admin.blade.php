@@ -50,7 +50,6 @@
                                 <tr>
                                     <td class="py-2 pr-4">{{ $log->user?->name ?? 'System' }}</td>
                                     <td class="py-2 pr-4">{{ $log->action }}</td>
-                                    <td class="py-2 pr-4">{{ $log->ip_address ?? '—' }}</td>
                                     <td class="py-2 pr-4">{{ $log->created_at->diffForHumans() }}</td>
                                 </tr>
                             @endforeach
