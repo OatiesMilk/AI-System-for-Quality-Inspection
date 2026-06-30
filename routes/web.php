@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InspectionImageController;
 use App\Http\Controllers\Manager\BatchController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/inspections/{inspection}/image', [InspectionImageController::class, 'show'])
+        ->name('inspections.image');
 
     Route::middleware('role:quality_inspector')->group(function () {
         Route::get('/inspector', [DashboardController::class, 'inspector'])->name('dashboard.inspector');

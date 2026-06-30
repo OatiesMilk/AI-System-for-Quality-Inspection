@@ -16,6 +16,8 @@ class Inspection extends Model
         'inspector_id',
         'checkpoint',
         'image_path',
+        'image_data',
+        'image_mime',
         'action',
         'ai_override',
         'inspected_at',
@@ -44,5 +46,10 @@ class Inspection extends Model
     public function defects(): HasMany
     {
         return $this->hasMany(Defect::class);
+    }
+
+    public function hasStoredImage(): bool
+    {
+        return ! empty($this->image_data);
     }
 }

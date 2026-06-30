@@ -40,13 +40,16 @@ class InspectionIngestController extends Controller
             'defects.*.bounding_box.height' => ['required_with:defects.*.bounding_box', 'numeric', 'between:0,1'],
         ]);
 
-        $imagePath = $request->file('image')->store('inspections', 'public');
+        $imageFile = $request->file('image');
+        $imageData = base64_encode(file_get_contents($imageFile->getRealPath()));
+        $imageMime = $imageFile->getMimeType();
 
-        $inspection = DB::transaction(function () use ($validated, $imagePath) {
+        $inspection = DB::transaction(function () use ($validated, $imageData, $imageMime) {
             $inspection = Inspection::create([
                 'batch_id' => $validated['batch_id'],
                 'checkpoint' => $validated['checkpoint'],
-                'image_path' => $imagePath,
+                'image_data' => $imageData,
+                'image_mime' => $imageMime,
             ]);
 
             foreach ($validated['defects'] ?? [] as $defect) {

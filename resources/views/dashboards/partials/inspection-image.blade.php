@@ -1,6 +1,8 @@
 <div class="flex justify-center mb-6">
     <div class="relative inline-block">
-        @if ($inspection->image_path)
+        @if ($inspection->hasStoredImage())
+            <img src="{{ route('inspections.image', $inspection) }}" alt="Inspection image" class="max-w-full max-h-[32rem] rounded border border-gray-200">
+        @elseif ($inspection->image_path)
             <img src="{{ asset('storage/'.$inspection->image_path) }}" alt="Inspection image" class="max-w-full max-h-[32rem] rounded border border-gray-200">
         @else
             <div class="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-400 rounded">No image available</div>

@@ -6,7 +6,6 @@ use App\Models\Batch;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -21,6 +20,22 @@ class InspectionIngestApiTest extends TestCase
             'production_date' => now(),
             'manufacturing_stage' => 'finishing',
         ]);
+    }
+
+    /**
+     * UploadedFile::fake()->create() produces a zero-byte file on some
+     * environments, which is useless for asserting the bytes actually
+     * round-trip through storage, and the "image" validation rule requires
+     * genuine image content. This writes a real 1x1 PNG instead.
+     */
+    private function fakeImageWithContent(string $name = 'inspection.png'): UploadedFile
+    {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+
+        $path = tempnam(sys_get_temp_dir(), 'cpoint_test_image');
+        file_put_contents($path, $png);
+
+        return new UploadedFile($path, $name, 'image/png', null, true);
     }
 
     public function test_unauthenticated_requests_are_rejected(): void
@@ -52,13 +67,11 @@ class InspectionIngestApiTest extends TestCase
 
     public function test_it_creates_an_inspection_with_defects_and_stores_the_image(): void
     {
-        Storage::fake('public');
-
         $service = User::factory()->create(['role' => 'system_admin']);
         Sanctum::actingAs($service, ['inspections:create']);
 
         $batch = $this->makeBatch();
-        $image = UploadedFile::fake()->create('inspection.jpg', 50, 'image/jpeg');
+        $image = $this->fakeImageWithContent();
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
@@ -95,7 +108,9 @@ class InspectionIngestApiTest extends TestCase
         $inspectionId = $response->json('inspection_id');
         $inspection = \App\Models\Inspection::find($inspectionId);
 
-        Storage::disk('public')->assertExists($inspection->image_path);
+        $this->assertTrue($inspection->hasStoredImage());
+        $this->assertSame('image/png', $inspection->image_mime);
+        $this->assertSame(file_get_contents($image->getRealPath()), base64_decode($inspection->image_data));
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'inspection.ingested',
@@ -168,7 +183,7 @@ class InspectionIngestApiTest extends TestCase
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
             'checkpoint' => 'preparation',
-            'image' => UploadedFile::fake()->create('clean.jpg', 50, 'image/jpeg'),
+            'image' => $this->fakeImageWithContent('clean.png'),
         ]);
 
         $response->assertCreated();
