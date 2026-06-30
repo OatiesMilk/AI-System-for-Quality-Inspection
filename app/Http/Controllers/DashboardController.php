@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Batch;
 use App\Models\Defect;
 use App\Models\Inspection;
@@ -35,6 +36,48 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboards.inspector', compact('pendingInspections'));
+    }
+
+    public function showInspection(Inspection $inspection): View
+    {
+        $inspection->load('batch', 'defects');
+
+        return view('dashboards.inspector-review', compact('inspection'));
+    }
+
+    public function updateInspection(Request $request, Inspection $inspection): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', 'in:pass,rework,reject'],
+            'defects' => ['array'],
+            'defects.*' => ['nullable', 'boolean'],
+        ]);
+
+        $confirmedStates = collect($inspection->defects)->mapWithKeys(
+            fn (Defect $defect) => [$defect->id => $request->boolean("defects.{$defect->id}")]
+        );
+
+        $aiOverride = $confirmedStates->contains(false);
+
+        foreach ($inspection->defects as $defect) {
+            $defect->update(['confirmed' => $confirmedStates->get($defect->id, false)]);
+        }
+
+        $inspection->update([
+            'inspector_id' => $request->user()->id,
+            'action' => $validated['action'],
+            'ai_override' => $aiOverride,
+            'inspected_at' => now(),
+        ]);
+
+        AuditLog::record('inspection.validated', $request->user(), [
+            'inspection_id' => $inspection->id,
+            'action' => $validated['action'],
+            'ai_override' => $aiOverride,
+        ]);
+
+        return redirect()->route('dashboard.inspector')
+            ->with('status', "Inspection #{$inspection->id} marked as {$validated['action']}.");
     }
 
     public function manager(): View

@@ -13,28 +13,30 @@
                 @if ($pendingInspections->isEmpty())
                     <p class="text-gray-500">No inspections awaiting validation.</p>
                 @else
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr class="text-left text-xs font-medium text-gray-500 uppercase">
-                                <th class="py-2 pr-4">Batch</th>
-                                <th class="py-2 pr-4">Checkpoint</th>
-                                <th class="py-2 pr-4">Captured</th>
-                                <th class="py-2 pr-4">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @foreach ($pendingInspections as $inspection)
-                                <tr>
-                                    <td class="py-2 pr-4">{{ $inspection->batch?->batch_code ?? '—' }}</td>
-                                    <td class="py-2 pr-4 capitalize">{{ $inspection->checkpoint }}</td>
-                                    <td class="py-2 pr-4">{{ $inspection->created_at->diffForHumans() }}</td>
-                                    <td class="py-2 pr-4">
-                                        <span class="text-indigo-600">Review</span>
-                                    </td>
+                    <div class="overflow-hidden border border-gray-200 rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    <th class="px-6 py-3">Batch</th>
+                                    <th class="px-6 py-3">Checkpoint</th>
+                                    <th class="px-6 py-3">Captured</th>
+                                    <th class="px-6 py-3">Action</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach ($pendingInspections as $inspection)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->created_at->diffForHumans() }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <a href="{{ route('inspector.inspections.show', $inspection) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">Review</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 @endif
             </div>
         </div>
