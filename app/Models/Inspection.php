@@ -19,6 +19,7 @@ class Inspection extends Model
         'action',
         'ai_override',
         'inspected_at',
+        'reworked_at',
     ];
 
     protected function casts(): array
@@ -26,6 +27,7 @@ class Inspection extends Model
         return [
             'ai_override' => 'boolean',
             'inspected_at' => 'datetime',
+            'reworked_at' => 'datetime',
         ];
     }
 

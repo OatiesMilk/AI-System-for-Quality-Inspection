@@ -114,10 +114,23 @@ class DashboardController extends Controller
     {
         $reworkInspections = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
+            ->whereNull('reworked_at')
             ->latest()
             ->limit(10)
             ->get();
 
         return view('dashboards.constructor', compact('reworkInspections'));
+    }
+
+    public function resolveRework(Request $request, Inspection $inspection): RedirectResponse
+    {
+        $inspection->update(['reworked_at' => now()]);
+
+        AuditLog::record('inspection.reworked', $request->user(), [
+            'inspection_id' => $inspection->id,
+        ]);
+
+        return redirect()->route('dashboard.constructor')
+            ->with('status', "Inspection #{$inspection->id} marked as resolved.");
     }
 }
