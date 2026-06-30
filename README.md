@@ -55,6 +55,38 @@ Then open Windows Firewall for port `3306`, scoped to the Tailscale subnet only:
 New-NetFirewallRule -DisplayName "MySQL Tailscale" -Direction Inbound -Protocol TCP -LocalPort 3306 -RemoteAddress 100.64.0.0/10 -Action Allow
 ```
 
+## 2b. Shared image storage (multi-machine setup)
+
+Inspection images need to be reachable by **every** teammate's local Laravel instance, not just whoever's machine handled the upload. The `public` storage disk's root is configurable via `PUBLIC_STORAGE_ROOT`, pointed at a Windows network share over Tailscale.
+
+**On the storage host machine** (already done — `oatiesmilk`, `100.65.92.18`):
+- Files live in `C:\CPointStorage` (deliberately **outside** any OneDrive-synced folder — OneDrive's Files On-Demand can turn files into cloud-only placeholders that break network reads).
+- Shared via SMB as `\\100.65.92.18\CPointStorage`, with a dedicated local Windows account (`cpointshare`) for network auth — not anyone's personal login.
+- Firewall: port `445` open, scoped to the Tailscale subnet only.
+- `.env` has `PUBLIC_STORAGE_ROOT=C:\CPointStorage` (local path, since this machine owns the folder).
+
+**On every other machine**, add to `.env`:
+
+```env
+PUBLIC_STORAGE_ROOT=\\100.65.92.18\CPointStorage
+```
+
+Then map the share once (so Windows caches the credentials) before running `storage:link`:
+
+```powershell
+net use \\100.65.92.18\CPointStorage /user:cpointshare <ask the host machine's owner for the password> /persistent:yes
+```
+
+Then (re)create the symlink:
+
+```bash
+php artisan storage:link
+```
+
+If `public/storage` already exists pointing elsewhere, delete it first (`rm public/storage` or `rmdir public\storage` on Windows) before re-running `storage:link`.
+
+Now every machine's Laravel instance reads and writes inspection images from the same physical location, regardless of who uploaded them or which machine is rendering the dashboard.
+
 ## 3. Run migrations
 
 Only needs to be run **once**, by whoever is setting up the database for the first time (e.g. the host machine). Everyone else connecting to the same shared database should skip this step — the schema already exists.
