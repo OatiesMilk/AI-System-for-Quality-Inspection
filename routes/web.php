@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
@@ -29,6 +30,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:system_admin')->group(function () {
         Route::get('/admin', [DashboardController::class, 'admin'])->name('dashboard.admin');
+
+        Route::get('/admin/users/create', [RegisteredUserController::class, 'create'])
+            ->name('admin.users.create');
+        Route::post('/admin/users', [RegisteredUserController::class, 'store'])
+            ->name('admin.users.store');
+        Route::get('/admin/users/{user}/edit', [AdminUserController::class, 'edit'])
+            ->name('admin.users.edit');
+        Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])
+            ->name('admin.users.update');
     });
 
     Route::middleware('role:shoe_constructor')->group(function () {
