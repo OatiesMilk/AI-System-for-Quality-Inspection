@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -19,6 +20,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:product_manager')->group(function () {
         Route::get('/manager', [DashboardController::class, 'manager'])->name('dashboard.manager');
+
+        Route::get('/manager/users/create', [RegisteredUserController::class, 'create'])
+            ->name('manager.users.create');
+        Route::post('/manager/users', [RegisteredUserController::class, 'store'])
+            ->name('manager.users.store');
     });
 
     Route::middleware('role:system_admin')->group(function () {

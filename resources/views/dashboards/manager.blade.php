@@ -7,6 +7,18 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            @if (session('status'))
+                <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            <div class="flex justify-end">
+                <a href="{{ route('manager.users.create') }}" class="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
+                    {{ __('Create User Account') }}
+                </a>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Defect Counts by Type (Descriptive Analytics)</h3>
 
