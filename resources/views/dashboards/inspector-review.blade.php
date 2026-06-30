@@ -15,7 +15,7 @@
                 <dl class="grid grid-cols-3 gap-4 text-sm mb-6">
                     <div>
                         <dt class="text-gray-500">Batch</dt>
-                        <dd class="font-medium">{{ $inspection->batch?->batch_code ?? '—' }}</dd>
+                        <dd class="font-medium">{{ $inspection->batch?->batch_code ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="text-gray-500">Checkpoint</dt>

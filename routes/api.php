@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BatchLookupController;
 use App\Http\Controllers\Api\InspectionIngestController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,4 +18,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'abilities:inspections:create'])->group(function () {
     Route::post('/inspections', [InspectionIngestController::class, 'store'])
         ->name('api.inspections.store');
+    Route::get('/batches/latest', [BatchLookupController::class, 'latest'])
+        ->name('api.batches.latest');
 });

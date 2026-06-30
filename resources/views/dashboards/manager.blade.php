@@ -139,6 +139,7 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr class="text-left text-xs font-medium text-gray-500 uppercase">
+                                <th class="py-2 pr-4">ID</th>
                                 <th class="py-2 pr-4">Batch Code</th>
                                 <th class="py-2 pr-4">Shift</th>
                                 <th class="py-2 pr-4">Stage</th>
@@ -148,8 +149,9 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($recentBatches as $batch)
                                 <tr>
+                                    <td class="py-2 pr-4 font-mono text-gray-500">{{ $batch->id }}</td>
                                     <td class="py-2 pr-4">{{ $batch->batch_code }}</td>
-                                    <td class="py-2 pr-4 uppercase">{{ $batch->shift ?? '—' }}</td>
+                                    <td class="py-2 pr-4 uppercase">{{ $batch->shift ?? '-' }}</td>
                                     <td class="py-2 pr-4 capitalize">{{ $batch->manufacturing_stage }}</td>
                                     <td class="py-2 pr-4">{{ $batch->inspections->count() }}</td>
                                 </tr>

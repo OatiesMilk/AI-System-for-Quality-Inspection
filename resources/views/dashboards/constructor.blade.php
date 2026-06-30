@@ -34,7 +34,7 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($reworkInspections as $inspection)
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
                                             {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
@@ -81,7 +81,7 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($resolvedReworks as $inspection)
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
                                             {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}

@@ -21,7 +21,7 @@ class DemoDataSeeder extends Seeder
         $inspector = User::where('email', 'inspector@cpoint.test')->first();
 
         if (! $manager || ! $inspector) {
-            $this->command?->warn('Demo accounts not found — run the main DatabaseSeeder first.');
+            $this->command?->warn('Demo accounts not found - run the main DatabaseSeeder first.');
 
             return;
         }
@@ -71,7 +71,7 @@ class DemoDataSeeder extends Seeder
                 'ai_override' => false,
             ]);
 
-            // One inspection flagged for rework — alternate resolved/unresolved.
+            // One inspection flagged for rework - alternate resolved/unresolved.
             $rework = Inspection::factory()->for($batch)->reviewed('rework')->create([
                 'checkpoint' => $plan['stage'],
                 'inspector_id' => $inspector->id,

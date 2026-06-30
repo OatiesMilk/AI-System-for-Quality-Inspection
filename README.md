@@ -38,7 +38,7 @@ DB_USERNAME=cpoint_remote
 DB_PASSWORD=<ask the database host machine's owner>
 ```
 
-> `.env` is gitignored and machine-specific — these values are never pulled from git. Each teammate sets their own `.env`, but everyone should point `DB_HOST` at the same shared database if you want all dashboards to reflect the same data.
+> `.env` is gitignored and machine-specific - these values are never pulled from git. Each teammate sets their own `.env`, but everyone should point `DB_HOST` at the same shared database if you want all dashboards to reflect the same data.
 
 If you're the one **hosting** the shared MySQL database, instead create a local database and a remote-accessible user:
 
@@ -57,7 +57,7 @@ New-NetFirewallRule -DisplayName "MySQL Tailscale" -Direction Inbound -Protocol 
 
 ## 3. Run migrations
 
-Only needs to be run **once**, by whoever is setting up the database for the first time (e.g. the host machine). Everyone else connecting to the same shared database should skip this step — the schema already exists.
+Only needs to be run **once**, by whoever is setting up the database for the first time (e.g. the host machine). Everyone else connecting to the same shared database should skip this step - the schema already exists.
 
 ```bash
 php artisan migrate
@@ -69,7 +69,7 @@ php artisan migrate
 npm run build
 ```
 
-Run this any time you pull changes that touch Blade views, CSS, or JS — Tailwind and Chart.js are compiled at build time, so a stale build means missing styles or a broken chart even if the underlying code is correct. Use `npm run dev` instead if you want live-reloading Vite during active development.
+Run this any time you pull changes that touch Blade views, CSS, or JS - Tailwind and Chart.js are compiled at build time, so a stale build means missing styles or a broken chart even if the underlying code is correct. Use `npm run dev` instead if you want live-reloading Vite during active development.
 
 ## 5. Serve the app
 
@@ -98,7 +98,7 @@ The system has four roles, each with its own dashboard:
 | System Admin | `/admin` | Create/edit any account (including other admins), full audit log with filters |
 | Shoe Constructor | `/constructor` | Rework notifications for batches they assembled, image/defect detail, mark reworks resolved |
 
-Account creation is restricted to System Admin only. There is no public registration page — to create your first account, run `php artisan db:seed`, which creates one demo account per role (see `database/seeders/DatabaseSeeder.php`), or create one directly via `php artisan tinker`.
+Account creation is restricted to System Admin only. There is no public registration page - to create your first account, run `php artisan db:seed`, which creates one demo account per role (see `database/seeders/DatabaseSeeder.php`), or create one directly via `php artisan tinker`.
 
 ## Computer Vision Ingestion API
 
@@ -119,9 +119,19 @@ The YOLO detection pipeline posts inspection results into the system via a machi
 | `defects[n][confidence_score]` | float | no | YOLO confidence, 0–1 |
 | `defects[n][bounding_box][x/y/width/height]` | float | no | Fractional coordinates (0–1) of the image |
 
-**Response:** `201 Created` with `{ "message", "inspection_id", "defect_count" }`. The created inspection lands in the Quality Inspector's "Pending Inspections" queue exactly like any other inspection — no separate code path.
+**Response:** `201 Created` with `{ "message", "inspection_id", "defect_count" }`. The created inspection lands in the Quality Inspector's "Pending Inspections" queue exactly like any other inspection - no separate code path.
 
-**Image storage:** the uploaded photo is stored as base64 inside the `inspections` table (`image_data`/`image_mime` columns), not on disk. This means every machine connected to the shared MySQL database can see inspection images immediately, with no separate file share, SMB setup, or S3-compatible storage needed — the existing DB connection is the only thing that has to be centralized. Images are served back out via `GET /inspections/{inspection}/image` (any authenticated dashboard role can view), which streams the decoded bytes with the correct `Content-Type`.
+**Image storage:** the uploaded photo is stored as base64 inside the `inspections` table (`image_data`/`image_mime` columns), not on disk. This means every machine connected to the shared MySQL database can see inspection images immediately, with no separate file share, SMB setup, or S3-compatible storage needed - the existing DB connection is the only thing that has to be centralized. Images are served back out via `GET /inspections/{inspection}/image` (any authenticated dashboard role can view), which streams the decoded bytes with the correct `Content-Type`.
+
+### Resolving the current batch automatically
+
+**Endpoint:** `GET /api/batches/latest?checkpoint=preparation&shift=am`
+
+Lets the capture pipeline target whichever batch is currently open without hardcoding a `batch_id`. Returns the most recently created batch (`latest('id')`, not `created_at`, so it's unambiguous even when two batches are created in the same second) matching the given `checkpoint` (required) and `shift` (optional - omit to match any shift).
+
+**Response:** `200 OK` with `{ "batch_id", "batch_code", "shift", "manufacturing_stage" }`, or `404` if nothing matches. Same auth as the ingestion endpoint above.
+
+`live_feed_to_system.py` uses this automatically when run without `--batch-id` - it re-resolves the latest matching batch right before every capture, so if the Product Manager creates a new batch mid-session, the very next `c` press lands in the new batch with no restart needed.
 
 ### Issuing a token for the YOLO service
 
@@ -137,7 +147,7 @@ echo \$service->createToken('yolo-pipeline', ['inspections:create'])->plainTextT
 "
 ```
 
-The token is only shown once — store it securely (e.g. in the Python service's own `.env`, never committed to git).
+The token is only shown once - store it securely (e.g. in the Python service's own `.env`, never committed to git).
 
 ## Troubleshooting
 
@@ -145,7 +155,7 @@ The token is only shown once — store it securely (e.g. in the Python service's
 Run `npm install && npm run build`. This happens after a fresh clone or pull when assets haven't been compiled yet on that machine.
 
 **Styles or buttons look unstyled after pulling new changes**
-Same root cause — `npm run build` wasn't re-run after the Blade/CSS changes landed. The compiled `public/build/` output isn't tracked in git, so each machine has to rebuild it locally.
+Same root cause - `npm run build` wasn't re-run after the Blade/CSS changes landed. The compiled `public/build/` output isn't tracked in git, so each machine has to rebuild it locally.
 
 **Database connection errors**
 Confirm `.env` has the correct `DB_HOST` (your own machine if running locally, or the shared host's Tailscale IP if using the team database), and that Tailscale shows both machines as `Connected`.
