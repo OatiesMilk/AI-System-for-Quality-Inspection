@@ -15,7 +15,8 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/inspections/{inspection}/image', [InspectionImageController::class, 'show'])
+    Route::middleware('role:quality_inspector,product_manager,system_admin,shoe_constructor')
+        ->get('/inspections/{inspection}/image', [InspectionImageController::class, 'show'])
         ->name('inspections.image');
 
     Route::middleware('role:quality_inspector')->group(function () {

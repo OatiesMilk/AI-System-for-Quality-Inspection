@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'abilities:inspections:create'])->group(function () {
+Route::middleware(['auth:sanctum', 'abilities:inspections:create', 'throttle:60,1'])->group(function () {
     Route::post('/inspections', [InspectionIngestController::class, 'store'])
         ->name('api.inspections.store');
     Route::get('/batches/latest', [BatchLookupController::class, 'latest'])

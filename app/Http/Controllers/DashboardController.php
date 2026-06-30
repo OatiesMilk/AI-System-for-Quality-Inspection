@@ -75,6 +75,7 @@ class DashboardController extends Controller
         );
 
         $aiOverride = $confirmedStates->contains(false);
+        $previousAction = $inspection->action;
 
         foreach ($inspection->defects as $defect) {
             $defect->update(['confirmed' => $confirmedStates->get($defect->id, false)]);
@@ -87,9 +88,10 @@ class DashboardController extends Controller
             'inspected_at' => now(),
         ]);
 
-        AuditLog::record('inspection.validated', $request->user(), [
+        AuditLog::record($previousAction ? 'inspection.revalidated' : 'inspection.validated', $request->user(), [
             'inspection_id' => $inspection->id,
             'action' => $validated['action'],
+            'previous_action' => $previousAction,
             'ai_override' => $aiOverride,
         ]);
 
