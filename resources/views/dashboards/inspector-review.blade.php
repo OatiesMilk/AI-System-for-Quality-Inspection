@@ -19,7 +19,7 @@
                     </div>
                     <div>
                         <dt class="text-gray-500">Captured</dt>
-                        <dd class="font-medium">{{ $inspection->created_at->diffForHumans() }}</dd>
+                        <dd class="font-medium">{{ $inspection->created_at->format('M j, Y g:i A') }}</dd>
                     </div>
                 </dl>
 
