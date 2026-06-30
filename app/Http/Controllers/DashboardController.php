@@ -96,7 +96,12 @@ class DashboardController extends Controller
     {
         $users = User::orderBy('role')->orderBy('name')->get();
 
-        return view('dashboards.admin', compact('users'));
+        $auditLogs = AuditLog::with('user')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return view('dashboards.admin', compact('users', 'auditLogs'));
     }
 
     public function constructor(): View
