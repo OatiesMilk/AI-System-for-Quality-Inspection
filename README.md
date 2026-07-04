@@ -31,7 +31,7 @@ Edit `.env` and point the database connection at MySQL. If the team is sharing o
 
 ```env
 DB_CONNECTION=mysql
-DB_HOST=100.65.92.18
+DB_HOST=100.76.1.106
 DB_PORT=3306
 DB_DATABASE=cpoint_system
 DB_USERNAME=cpoint_remote
