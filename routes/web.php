@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DecisionSupportController;
 use App\Http\Controllers\InspectionImageController;
 use App\Http\Controllers\Manager\BatchController;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +33,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('manager.batches.create');
         Route::post('/manager/batches', [BatchController::class, 'store'])
             ->name('manager.batches.store');
+
+        Route::get('/manager/decision-support', [DecisionSupportController::class, 'index'])
+            ->name('decision-support.index');
     });
 
     Route::middleware('role:system_admin')->group(function () {
