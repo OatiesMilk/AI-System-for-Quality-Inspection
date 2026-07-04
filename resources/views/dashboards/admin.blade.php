@@ -13,6 +13,91 @@
                 </div>
             @endif
 
+            {{-- System Activity Summary --}}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-indigo-500">
+                    <div class="text-xs text-gray-500">Total Inspections</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['total_inspections'] }}</div>
+                </div>
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-green-500">
+                    <div class="text-xs text-gray-500">Today's Inspections</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['today_inspections'] }}</div>
+                </div>
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-blue-500">
+                    <div class="text-xs text-gray-500">Total Batches</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['total_batches'] }}</div>
+                </div>
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-red-500">
+                    <div class="text-xs text-gray-500">Total Defects</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['total_defects'] }}</div>
+                </div>
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-yellow-500">
+                    <div class="text-xs text-gray-500">Pending Reworks</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['pending_reworks'] }}</div>
+                </div>
+                <div class="bg-white shadow-sm sm:rounded-lg p-4 border-l-4 border-purple-500">
+                    <div class="text-xs text-gray-500">Total Users</div>
+                    <div class="text-2xl font-semibold text-gray-900">{{ $activitySummary['total_users'] }}</div>
+                </div>
+            </div>
+
+            {{-- Inspection Activity Trend & Audit Event Distribution --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Inspection Activity — Last 7 Days</h3>
+                    <canvas id="activityTrendChart"
+                        data-labels="{{ $activityLabels->toJson() }}"
+                        data-values="{{ $activityValues->toJson() }}"></canvas>
+                    @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const canvas = document.getElementById('activityTrendChart');
+                                if (!canvas || !window.Chart) return;
+                                new window.Chart(canvas, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: JSON.parse(canvas.dataset.labels),
+                                        datasets: [{
+                                            label: 'Inspections',
+                                            data: JSON.parse(canvas.dataset.values),
+                                            backgroundColor: '#6366f1',
+                                        }],
+                                    },
+                                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+                                });
+                            });
+                        </script>
+                    @endpush
+                </div>
+
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Audit Event Distribution</h3>
+                    @if ($auditEventCounts->isEmpty())
+                        <p class="text-gray-500 text-sm">No audit events recorded yet.</p>
+                    @else
+                        <canvas id="auditEventChart"
+                            data-labels="{{ $auditEventCounts->keys()->toJson() }}"
+                            data-values="{{ $auditEventCounts->values()->toJson() }}"></canvas>
+                        @push('scripts')
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const canvas = document.getElementById('auditEventChart');
+                                    if (!canvas || !window.Chart) return;
+                                    new window.Chart(canvas, {
+                                        type: 'doughnut',
+                                        data: {
+                                            labels: JSON.parse(canvas.dataset.labels),
+                                            datasets: [{ data: JSON.parse(canvas.dataset.values), backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#a855f7'] }],
+                                        },
+                                        options: { plugins: { legend: { position: 'bottom' } } },
+                                    });
+                                });
+                            </script>
+                        @endpush
+                    @endif
+                </div>
+            </div>
+
             <div class="flex justify-end">
                 <a href="{{ route('admin.users.create') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

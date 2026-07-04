@@ -44,20 +44,26 @@ class InspectionIngestController extends Controller
         $imageData = base64_encode(file_get_contents($imageFile->getRealPath()));
         $imageMime = $imageFile->getMimeType();
 
-        $inspection = DB::transaction(function () use ($validated, $imageData, $imageMime) {
+        $defectList  = $validated['defects'] ?? [];
+        $autoAction  = $this->resolveAutoAction($defectList);
+
+        $inspection = DB::transaction(function () use ($validated, $imageData, $imageMime, $autoAction, $defectList) {
             $inspection = Inspection::create([
-                'batch_id' => $validated['batch_id'],
-                'checkpoint' => $validated['checkpoint'],
-                'image_data' => $imageData,
-                'image_mime' => $imageMime,
+                'batch_id'    => $validated['batch_id'],
+                'checkpoint'  => $validated['checkpoint'],
+                'image_data'  => $imageData,
+                'image_mime'  => $imageMime,
+                'action'      => $autoAction,
+                'inspected_at'=> $autoAction !== null ? now() : null,
             ]);
 
-            foreach ($validated['defects'] ?? [] as $defect) {
+            foreach ($defectList as $defect) {
                 Defect::create([
-                    'inspection_id' => $inspection->id,
-                    'defect_type' => $defect['defect_type'],
-                    'confidence_score' => $defect['confidence_score'],
-                    'bounding_box' => $defect['bounding_box'] ?? null,
+                    'inspection_id'   => $inspection->id,
+                    'defect_type'     => $defect['defect_type'],
+                    'confidence_score'=> $defect['confidence_score'],
+                    'bounding_box'    => $defect['bounding_box'] ?? null,
+                    'confirmed'       => $autoAction === 'reject' ? true : null,
                 ]);
             }
 
@@ -66,14 +72,48 @@ class InspectionIngestController extends Controller
 
         AuditLog::record('inspection.ingested', $request->user(), [
             'inspection_id' => $inspection->id,
-            'batch_id' => $inspection->batch_id,
-            'defect_count' => count($validated['defects'] ?? []),
+            'batch_id'      => $inspection->batch_id,
+            'defect_count'  => count($defectList),
+            'auto_action'   => $autoAction ?? 'pending_review',
         ]);
 
         return response()->json([
-            'message' => 'Inspection recorded.',
-            'inspection_id' => $inspection->id,
+            'message'      => 'Inspection recorded.',
+            'inspection_id'=> $inspection->id,
             'defect_count' => $inspection->defects()->count(),
+            'auto_action'  => $autoAction ?? 'pending_review',
         ], 201);
+    }
+
+    /**
+     * Decide an automatic action based on YOLO confidence scores.
+     *
+     * Thresholds (configurable via .env):
+     *   YOLO_AUTO_REJECT_THRESHOLD  (default 0.80) — any defect at or above → reject
+     *   YOLO_AUTO_PASS_THRESHOLD    (default 0.50) — all defects below this  → pass
+     *   Between the two                             → null (send to inspector)
+     *
+     * Returns: 'pass' | 'reject' | null (null = needs human review)
+     */
+    protected function resolveAutoAction(array $defects): ?string
+    {
+        if (empty($defects)) {
+            return 'pass';
+        }
+
+        $rejectThreshold = (float) config('yolo.auto_reject_threshold', 0.80);
+        $passThreshold   = (float) config('yolo.auto_pass_threshold',   0.50);
+
+        $scores = array_column($defects, 'confidence_score');
+
+        if (max($scores) >= $rejectThreshold) {
+            return 'reject';
+        }
+
+        if (max($scores) < $passThreshold) {
+            return 'pass';
+        }
+
+        return null;
     }
 }

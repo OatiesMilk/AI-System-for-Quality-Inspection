@@ -101,30 +101,118 @@ class DashboardController extends Controller
 
     public function manager(): View
     {
+        // Defect distribution
         $defectCounts = Defect::query()
             ->selectRaw('defect_type, count(*) as total')
             ->groupBy('defect_type')
             ->pluck('total', 'defect_type');
 
-        $aiOverrideCounts = Defect::query()
+        // Dismissed (unconfirmed) defects — inspector overrides of AI flags
+        $dismissedDefectCounts = Defect::query()
             ->where('confirmed', false)
             ->selectRaw('defect_type, count(*) as total')
             ->groupBy('defect_type')
             ->pluck('total', 'defect_type');
 
+        // AI override summary
         $reviewedCount = Inspection::whereNotNull('action')->count();
         $overriddenCount = Inspection::where('ai_override', true)->count();
         $overrideRate = $reviewedCount > 0 ? round(($overriddenCount / $reviewedCount) * 100, 1) : 0;
 
-        $recentBatches = Batch::with('inspections')->latest()->limit(10)->get();
+        // Batch pass/fail/rework rates
+        $batchStats = Batch::with('inspections')->latest()->limit(10)->get()->map(function (Batch $batch) {
+            $total  = $batch->inspections->whereNotNull('action')->count();
+            $pass   = $batch->inspections->where('action', 'pass')->count();
+            $rework = $batch->inspections->where('action', 'rework')->count();
+            $reject = $batch->inspections->where('action', 'reject')->count();
+
+            return [
+                'batch_code' => $batch->batch_code,
+                'shift'      => $batch->shift,
+                'stage'      => $batch->manufacturing_stage,
+                'total'      => $total,
+                'pass'       => $pass,
+                'rework'     => $rework,
+                'reject'     => $reject,
+                'pass_rate'  => $total > 0 ? round(($pass / $total) * 100, 1) : null,
+            ];
+        });
+
+        // Defect trend — last 7 days
+        $defectTrend = Defect::query()
+            ->selectRaw('DATE(defects.created_at) as date, count(*) as total')
+            ->where('defects.created_at', '>=', now()->subDays(6)->startOfDay())
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('total', 'date');
+
+        $trendLabels = collect();
+        $trendValues = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $trendLabels->push(now()->subDays($i)->format('M j'));
+            $trendValues->push($defectTrend->get($date, 0));
+        }
+
+        // Shift comparison — AM vs PM pass rate
+        $shiftStats = Inspection::query()
+            ->whereNotNull('action')
+            ->join('batches', 'inspections.batch_id', '=', 'batches.id')
+            ->whereNotNull('batches.shift')
+            ->selectRaw('batches.shift, count(*) as total, sum(case when inspections.action = "pass" then 1 else 0 end) as pass_count')
+            ->groupBy('batches.shift')
+            ->get()
+            ->mapWithKeys(fn ($row) => [
+                strtoupper($row->shift) => [
+                    'total'     => $row->total,
+                    'pass'      => $row->pass_count,
+                    'pass_rate' => $row->total > 0 ? round(($row->pass_count / $row->total) * 100, 1) : null,
+                ],
+            ]);
+
+        // Checkpoint comparison — preparation vs finishing
+        $checkpointStats = Inspection::query()
+            ->whereNotNull('action')
+            ->selectRaw('checkpoint, count(*) as total, sum(case when action = "pass" then 1 else 0 end) as pass_count')
+            ->groupBy('checkpoint')
+            ->get()
+            ->mapWithKeys(fn ($row) => [
+                $row->checkpoint => [
+                    'total'     => $row->total,
+                    'pass'      => $row->pass_count,
+                    'pass_rate' => $row->total > 0 ? round(($row->pass_count / $row->total) * 100, 1) : null,
+                ],
+            ]);
+
+        // Inspector performance
+        $inspectorStats = Inspection::query()
+            ->whereNotNull('action')
+            ->whereNotNull('inspector_id')
+            ->with('inspector')
+            ->selectRaw('inspector_id, count(*) as total, sum(case when action = "pass" then 1 else 0 end) as pass_count, sum(ai_override) as overrides')
+            ->groupBy('inspector_id')
+            ->get()
+            ->map(fn ($row) => [
+                'name'          => $row->inspector?->name ?? 'Unknown',
+                'total'         => $row->total,
+                'pass'          => $row->pass_count,
+                'overrides'     => $row->overrides,
+                'override_rate' => $row->total > 0 ? round(($row->overrides / $row->total) * 100, 1) : null,
+            ])
+            ->sortByDesc('total');
 
         return view('dashboards.manager', compact(
             'defectCounts',
-            'aiOverrideCounts',
+            'dismissedDefectCounts',
             'reviewedCount',
             'overriddenCount',
             'overrideRate',
-            'recentBatches',
+            'batchStats',
+            'trendLabels',
+            'trendValues',
+            'shiftStats',
+            'checkpointStats',
+            'inspectorStats',
         ));
     }
 
@@ -154,7 +242,49 @@ class DashboardController extends Controller
             ->orderBy('action')
             ->pluck('action');
 
-        return view('dashboards.admin', compact('users', 'auditLogs', 'auditActions'));
+        // System activity summary
+        $activitySummary = [
+            'total_inspections'  => Inspection::whereNotNull('action')->count(),
+            'today_inspections'  => Inspection::whereNotNull('action')->whereDate('inspected_at', today())->count(),
+            'total_batches'      => Batch::count(),
+            'total_defects'      => Defect::count(),
+            'pending_reworks'    => Inspection::where('action', 'rework')->whereNull('reworked_at')->count(),
+            'total_users'        => User::count(),
+        ];
+
+        // Audit event distribution — count per action type
+        $auditEventCounts = AuditLog::query()
+            ->selectRaw('action, count(*) as total')
+            ->groupBy('action')
+            ->orderByDesc('total')
+            ->pluck('total', 'action');
+
+        // Inspection activity — last 7 days
+        $activityTrend = Inspection::query()
+            ->whereNotNull('action')
+            ->where('inspected_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(inspected_at) as date, count(*) as total')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('total', 'date');
+
+        $activityLabels = collect();
+        $activityValues = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $activityLabels->push(now()->subDays($i)->format('M j'));
+            $activityValues->push($activityTrend->get($date, 0));
+        }
+
+        return view('dashboards.admin', compact(
+            'users',
+            'auditLogs',
+            'auditActions',
+            'activitySummary',
+            'auditEventCounts',
+            'activityLabels',
+            'activityValues',
+        ));
     }
 
     public function constructor(Request $request): View
