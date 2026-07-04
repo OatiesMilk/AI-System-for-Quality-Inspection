@@ -242,48 +242,62 @@ class DashboardController extends Controller
             ->orderBy('action')
             ->pluck('action');
 
-        // System activity summary
-        $activitySummary = [
-            'total_inspections'  => Inspection::whereNotNull('action')->count(),
-            'today_inspections'  => Inspection::whereNotNull('action')->whereDate('inspected_at', today())->count(),
-            'total_batches'      => Batch::count(),
-            'total_defects'      => Defect::count(),
-            'pending_reworks'    => Inspection::where('action', 'rework')->whereNull('reworked_at')->count(),
-            'total_users'        => User::count(),
+        // User activity stats
+        $userActivityStats = [
+            'total_users'         => User::count(),
+            'logins_today'        => AuditLog::where('action', 'user.login')->whereDate('created_at', today())->count(),
+            'logouts_today'       => AuditLog::where('action', 'user.logout')->whereDate('created_at', today())->count(),
+            'accounts_created'    => AuditLog::where('action', 'user.created')->count(),
+            'accounts_updated'    => AuditLog::where('action', 'user.updated')->count(),
+            'active_today'        => AuditLog::whereDate('created_at', today())->distinct('user_id')->count('user_id'),
         ];
 
-        // Audit event distribution — count per action type
-        $auditEventCounts = AuditLog::query()
-            ->selectRaw('action, count(*) as total')
-            ->groupBy('action')
-            ->orderByDesc('total')
-            ->pluck('total', 'action');
+        // Per-user activity summary
+        $perUserActivity = User::withCount([
+            'auditLogs as total_actions',
+            'auditLogs as logins' => fn ($q) => $q->where('action', 'user.login'),
+            'auditLogs as logouts' => fn ($q) => $q->where('action', 'user.logout'),
+        ])
+        ->orderByDesc('total_actions')
+        ->get();
 
-        // Inspection activity — last 7 days
-        $activityTrend = Inspection::query()
-            ->whereNotNull('action')
-            ->where('inspected_at', '>=', now()->subDays(6)->startOfDay())
-            ->selectRaw('DATE(inspected_at) as date, count(*) as total')
+        // Login activity trend — last 7 days
+        $loginTrend = AuditLog::query()
+            ->where('action', 'user.login')
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as date, count(*) as total')
             ->groupBy('date')
             ->orderBy('date')
             ->pluck('total', 'date');
 
-        $activityLabels = collect();
-        $activityValues = collect();
+        $loginTrendLabels = collect();
+        $loginTrendValues = collect();
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
-            $activityLabels->push(now()->subDays($i)->format('M j'));
-            $activityValues->push($activityTrend->get($date, 0));
+            $loginTrendLabels->push(now()->subDays($i)->format('M j'));
+            $loginTrendValues->push($loginTrend->get($date, 0));
         }
+
+        // Recent user-related audit events only
+        $userAuditLogs = AuditLog::with('user')
+            ->whereIn('action', ['user.login', 'user.logout', 'user.created', 'user.updated', 'inspection.validated', 'inspection.reworked', 'batch.created'])
+            ->when($request->filled('action'), fn ($query) => $query->where('action', $request->string('action')))
+            ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('date_to')))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
 
         return view('dashboards.admin', compact(
             'users',
             'auditLogs',
             'auditActions',
-            'activitySummary',
-            'auditEventCounts',
-            'activityLabels',
-            'activityValues',
+            'userActivityStats',
+            'perUserActivity',
+            'loginTrendLabels',
+            'loginTrendValues',
+            'userAuditLogs',
         ));
     }
 

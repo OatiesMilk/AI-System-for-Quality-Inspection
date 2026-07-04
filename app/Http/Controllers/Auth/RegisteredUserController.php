@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +59,12 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        AuditLog::record('user.created', $request->user(), [
+            'target_user_id' => $user->id,
+            'name'           => $user->name,
+            'role'           => $user->role,
+        ]);
 
         return redirect()->route('dashboard.admin')
             ->with('status', "Account created for {$user->name}.");
