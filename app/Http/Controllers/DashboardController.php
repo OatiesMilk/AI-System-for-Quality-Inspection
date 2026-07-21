@@ -7,6 +7,7 @@ use App\Models\Batch;
 use App\Models\Defect;
 use App\Models\Inspection;
 use App\Models\User;
+use App\Services\DecisionSupportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -99,7 +100,7 @@ class DashboardController extends Controller
             ->with('status', "Inspection #{$inspection->id} marked as {$validated['action']}.");
     }
 
-    public function manager(): View
+    public function manager(DecisionSupportService $decisionSupportService): View
     {
         // Defect distribution
         $defectCounts = Defect::query()
@@ -201,6 +202,10 @@ class DashboardController extends Controller
             ])
             ->sortByDesc('total');
 
+        // Surface the single most urgent AI decision-support insight for the last 7 days.
+        $decisionSupport = $decisionSupportService->buildReport(now()->subDays(6), now());
+        $topInsight = collect($decisionSupport['insights'])->first(fn ($i) => $i['severity'] !== 'info');
+
         return view('dashboards.manager', compact(
             'defectCounts',
             'dismissedDefectCounts',
@@ -213,6 +218,7 @@ class DashboardController extends Controller
             'shiftStats',
             'checkpointStats',
             'inspectorStats',
+            'topInsight',
         ));
     }
 

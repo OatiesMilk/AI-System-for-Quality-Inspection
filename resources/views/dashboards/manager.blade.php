@@ -29,6 +29,25 @@
                 </a>
             </div>
 
+            @if ($topInsight)
+                @php
+                    $bannerStyles = [
+                        'critical' => 'bg-red-50 border-red-300 text-red-800',
+                        'high'     => 'bg-orange-50 border-orange-300 text-orange-800',
+                        'medium'   => 'bg-yellow-50 border-yellow-300 text-yellow-800',
+                    ];
+                @endphp
+                <a href="{{ route('decision-support.index') }}" class="block border rounded-lg p-4 hover:opacity-90 transition {{ $bannerStyles[$topInsight['severity']] ?? 'bg-gray-50 border-gray-300 text-gray-800' }}">
+                    <div class="flex items-start gap-3">
+                        <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold uppercase bg-white/60">
+                            {{ __('AI Insight') }}
+                        </span>
+                        <p class="text-sm font-medium">{{ $topInsight['message'] }}</p>
+                        <span class="ml-auto text-xs font-semibold whitespace-nowrap">{{ __('View details →') }}</span>
+                    </div>
+                </a>
+            @endif
+
             {{-- Defect Distribution --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Defect Distribution</h3>
