@@ -100,10 +100,19 @@ class DashboardController extends Controller
             ->with('status', "Inspection #{$inspection->id} marked as {$validated['action']}.");
     }
 
-    public function manager(DecisionSupportService $decisionSupportService): View
+    public function manager(Request $request, DecisionSupportService $decisionSupportService): View
     {
-        // Defect distribution
+        $request->validate([
+            'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+        ]);
+
+        $batches = Batch::orderByDesc('production_date')->orderByDesc('id')->get(['id', 'batch_code']);
+        $selectedBatchId = $request->integer('batch_id') ?: null;
+
+        // Defect distribution — filterable by batch
         $defectCounts = Defect::query()
+            ->join('inspections', 'defects.inspection_id', '=', 'inspections.id')
+            ->when($selectedBatchId, fn ($query) => $query->where('inspections.batch_id', $selectedBatchId))
             ->selectRaw('defect_type, count(*) as total')
             ->groupBy('defect_type')
             ->pluck('total', 'defect_type');
@@ -207,6 +216,8 @@ class DashboardController extends Controller
         $topInsight = collect($decisionSupport['insights'])->first(fn ($i) => $i['severity'] !== 'info');
 
         return view('dashboards.manager', compact(
+            'batches',
+            'selectedBatchId',
             'defectCounts',
             'dismissedDefectCounts',
             'reviewedCount',

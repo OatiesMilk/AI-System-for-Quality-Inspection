@@ -17,7 +17,7 @@ class DecisionSupportController extends Controller
         ]);
 
         $to   = $request->filled('date_to')   ? Carbon::parse($request->string('date_to'))   : now();
-        $from = $request->filled('date_from')  ? Carbon::parse($request->string('date_from')) : $to->copy();
+        $from = $request->filled('date_from')  ? Carbon::parse($request->string('date_from')) : $to->copy()->subDays(6);
 
         $report = $service->buildReport($from, $to);
 

@@ -264,10 +264,14 @@ class DecisionSupportService
 
         if (in_array($riskLevel, ['CRITICAL', 'HIGH'], true)) {
             $vs = $historicalAvgRejectRate !== null ? " (historical average {$historicalAvgRejectRate}%)" : '';
+            $plainRate = $rejectRate !== null ? round($rejectRate) : 0;
             $insights[] = [
                 'severity' => $riskLevel === 'CRITICAL' ? 'critical' : 'high',
                 'category' => 'risk',
-                'message'  => "Overall reject/rework rate is {$rejectRate}%{$vs} — risk level is {$riskLevel}.",
+                'summary'  => $riskLevel === 'CRITICAL'
+                    ? "Serious quality problem: about {$plainRate} out of every 100 items inspected are failing or need rework."
+                    : "Quality is worse than usual: about {$plainRate} out of every 100 items inspected are failing or need rework.",
+                'message'  => "Overall reject/rework rate is {$rejectRate}%{$vs}. Risk level: {$riskLevel}.",
             ];
         }
 
@@ -275,27 +279,35 @@ class DecisionSupportService
             $label   = str_replace('_', ' ', $spike['defect_type']);
             $causes  = self::DEFECT_CAUSES[$spike['defect_type']] ?? [];
             $causeText = $causes !== [] ? ' Likely cause: ' . $causes[0] . '.' : '';
+            $topCause = $causes[0] ?? null;
 
             $insights[] = [
                 'severity' => 'high',
                 'category' => 'defect_spike',
+                'summary'  => $topCause !== null
+                    ? "'{$label}' defects are unusually high right now ({$spike['current_count']} found this period). Most likely reason: {$topCause}."
+                    : "'{$label}' defects are unusually high right now ({$spike['current_count']} found this period).",
                 'message'  => "Spike in '{$label}' defects: {$spike['current_pct']}% of all defects this period vs {$spike['historical_pct']}% historically (+{$spike['point_change']} pts, {$spike['current_count']} occurrences).{$causeText}",
             ];
         }
 
         foreach ($spikeHours as $hour => $stats) {
             $upliftPct = $overallDefectRate > 0 ? round((($stats['rate'] - $overallDefectRate) / $overallDefectRate) * 100) : 0;
+            $hourLabel = $this->formatHourRange((int) $hour);
             $insights[] = [
                 'severity' => 'medium',
                 'category' => 'time_pattern',
-                'message'  => "Defects are more likely to occur around {$hour}:00–" . str_pad((string) ((int) $hour + 1), 2, '0', STR_PAD_LEFT) . ":00 — defect rate is {$upliftPct}% above the period average ({$stats['defects']} defects across {$stats['inspections']} inspections).",
+                'summary'  => "Most defects are happening around {$hourLabel}. Consider extra inspection during this window.",
+                'message'  => "Defects are more likely to occur around {$hour}:00 to " . str_pad((string) ((int) $hour + 1), 2, '0', STR_PAD_LEFT) . ":00. Defect rate is {$upliftPct}% above the period average ({$stats['defects']} defects across {$stats['inspections']} inspections).",
             ];
         }
 
         if ($anomalousBatches->isNotEmpty()) {
+            $batchWord = $anomalousBatches->count() === 1 ? 'batch has' : 'batches have';
             $insights[] = [
                 'severity' => 'high',
                 'category' => 'batch_anomaly',
+                'summary'  => 'This ' . $batchWord . ' far more rejects than normal (' . $anomalousBatches->keys()->implode(', ') . '). Worth investigating what happened with them specifically.',
                 'message'  => 'Unusually high reject rate detected in batch(es): ' . $anomalousBatches->keys()->implode(', ') . '. Cross-reference against raw materials and process records.',
             ];
         }
@@ -306,7 +318,8 @@ class DecisionSupportService
             $insights[] = [
                 'severity' => 'medium',
                 'category' => 'stage_risk',
-                'message'  => "The '{$worstLineKey}' stage has the lowest pass rate ({$worstLine['pass_rate']}%) — consider increasing inspection frequency there.",
+                'summary'  => "The '{$worstLineKey}' stage is producing more failures than other stages. Consider checking in on it more often.",
+                'message'  => "The '{$worstLineKey}' stage has the lowest pass rate ({$worstLine['pass_rate']}%). Consider increasing inspection frequency there.",
             ];
         }
 
@@ -314,6 +327,7 @@ class DecisionSupportService
             $insights[] = [
                 'severity' => 'info',
                 'category' => 'none',
+                'summary'  => 'Everything looks normal. No unusual defect patterns this period.',
                 'message'  => 'No significant spikes or risk patterns detected for this period.',
             ];
         }
@@ -322,6 +336,16 @@ class DecisionSupportService
         usort($insights, fn ($a, $b) => $severityOrder[$a['severity']] <=> $severityOrder[$b['severity']]);
 
         return $insights;
+    }
+
+    /**
+     * Turn a 24-hour clock hour into a plain "2–3 PM" style range for non-technical readers.
+     */
+    protected function formatHourRange(int $hour): string
+    {
+        $format = fn (int $h) => Carbon::createFromTime($h % 24, 0)->format('g A');
+
+        return $format($hour) . '–' . $format($hour + 1);
     }
 
     protected function determineRiskLevel(?float $rejectRate, ?float $historicalAvg): string

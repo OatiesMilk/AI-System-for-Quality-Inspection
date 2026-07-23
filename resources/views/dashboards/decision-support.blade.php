@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('AI Decision Support') }}
+            {{ __('AI Support Suggestions') }}
         </h2>
     </x-slot>
 
@@ -75,7 +75,12 @@
                                     <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold uppercase {{ $style['badge'] }}">
                                         {{ $insight['severity'] }}
                                     </span>
-                                    <p class="text-sm text-gray-800">{{ $insight['message'] }}</p>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ $insight['summary'] ?? $insight['message'] }}</p>
+                                        @if (isset($insight['summary']))
+                                            <p class="text-xs text-gray-500 mt-1">{{ $insight['message'] }}</p>
+                                        @endif
+                                    </div>
                                 </div>
                             </li>
                         @endforeach
