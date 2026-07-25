@@ -38,12 +38,14 @@
                     ];
                 @endphp
                 <a href="{{ route('decision-support.index') }}" class="block border rounded-lg p-4 hover:opacity-90 transition {{ $bannerStyles[$topInsight['severity']] ?? 'bg-gray-50 border-gray-300 text-gray-800' }}">
-                    <div class="flex items-start gap-3">
-                        <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold uppercase bg-white/60">
-                            {{ __('AI Insight') }}
-                        </span>
-                        <p class="text-sm font-medium">{{ $topInsight['summary'] ?? $topInsight['message'] }}</p>
-                        <span class="ml-auto text-xs font-semibold whitespace-nowrap">{{ __('View details →') }}</span>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold uppercase bg-white/60">
+                                {{ __('AI Insight') }}
+                            </span>
+                            <p class="text-sm font-medium">{{ $topInsight['summary'] ?? $topInsight['message'] }}</p>
+                        </div>
+                        <span class="shrink-0 text-xs font-semibold whitespace-nowrap">{{ __('View details →') }}</span>
                     </div>
                 </a>
             @endif
@@ -53,6 +55,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 class="text-lg font-medium text-gray-900">Defect Distribution</h3>
                     <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="trend_batch_id" value="{{ $selectedTrendBatchId }}">
                         <select name="batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
                             <option value="">All batches</option>
                             @foreach ($batches as $batch)
@@ -60,7 +63,7 @@
                             @endforeach
                         </select>
                         @if ($selectedBatchId)
-                            <a href="{{ route('dashboard.manager') }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+                            <a href="{{ route('dashboard.manager', ['trend_batch_id' => $selectedTrendBatchId]) }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
                         @endif
                     </form>
                 </div>
@@ -101,37 +104,84 @@
                 @endif
             </div>
 
-            {{-- Defect Trend (Last 7 Days) --}}
+            {{-- Defect Trend --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Defect Trend — Last 7 Days</h3>
-                <div class="max-w-2xl">
-                    <canvas id="defectTrendChart"
-                        data-labels="{{ $trendLabels->toJson() }}"
-                        data-values="{{ $trendValues->toJson() }}"></canvas>
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+                    <h3 class="text-lg font-medium text-gray-900">Defect Trend by Hour</h3>
+                    <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="batch_id" value="{{ $selectedBatchId }}">
+                        <select name="trend_batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
+                            <option value="" @selected($trendMode === 'overall')>Overall (historical pattern)</option>
+                            @foreach ($batches as $batch)
+                                <option value="{{ $batch->id }}" @selected($selectedTrendBatchId == $batch->id)>{{ $batch->batch_code }}</option>
+                            @endforeach
+                        </select>
+                    </form>
                 </div>
-                @push('scripts')
-                    <script>
-                        document.addEventListener('DOMContentLoaded', () => {
-                            const canvas = document.getElementById('defectTrendChart');
-                            if (!canvas || !window.Chart) return;
-                            new window.Chart(canvas, {
-                                type: 'line',
-                                data: {
-                                    labels: JSON.parse(canvas.dataset.labels),
-                                    datasets: [{
-                                        label: 'Defects Detected',
-                                        data: JSON.parse(canvas.dataset.values),
-                                        borderColor: '#6366f1',
-                                        backgroundColor: 'rgba(99,102,241,0.1)',
-                                        fill: true,
-                                        tension: 0.3,
-                                    }],
-                                },
-                                options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+                <p class="text-sm text-gray-500 mb-4">
+                    @if ($trendMode === 'overall')
+                        Defect count for each hour of the day, across all recorded history.
+                    @else
+                        Defect count for each hour of the day, for the selected batch only.
+                    @endif
+                </p>
+                @if ($trendValues->sum() === 0)
+                    <p class="text-gray-500">No defect data recorded yet.</p>
+                @else
+                    <div class="max-w-2xl">
+                        <canvas id="defectTrendChart"
+                            data-labels="{{ $trendLabels->toJson() }}"
+                            data-values="{{ $trendValues->toJson() }}"
+                            data-spikes="{{ $spikeHours->toJson() }}"></canvas>
+                    </div>
+                    @if ($trendMode === 'overall' && $hourlySpikes->isNotEmpty())
+                        <div class="mt-4 border-t pt-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Historical spike hours</h4>
+                            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                @foreach ($hourlySpikes as $spike)
+                                    <li class="flex items-center gap-2 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                                        <span class="font-semibold text-red-700">{{ $spike['hour'] }}</span>
+                                        <span class="text-gray-600">{{ $spike['total'] }} defects</span>
+                                        @if ($spike['dominant_type'])
+                                            <span class="ml-auto text-xs text-gray-500 capitalize">mostly {{ $spike['dominant_type'] }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const canvas = document.getElementById('defectTrendChart');
+                                if (!canvas || !window.Chart) return;
+                                const labels = JSON.parse(canvas.dataset.labels);
+                                const values = JSON.parse(canvas.dataset.values);
+                                const spikes = new Set(JSON.parse(canvas.dataset.spikes));
+                                const pointColors = labels.map(label => spikes.has(label) ? '#ef4444' : '#6366f1');
+                                const pointRadii = labels.map(label => spikes.has(label) ? 5 : 3);
+                                new window.Chart(canvas, {
+                                    type: 'line',
+                                    data: {
+                                        labels,
+                                        datasets: [{
+                                            label: 'Defects Detected',
+                                            data: values,
+                                            borderColor: '#6366f1',
+                                            backgroundColor: 'rgba(99,102,241,0.1)',
+                                            pointBackgroundColor: pointColors,
+                                            pointBorderColor: pointColors,
+                                            pointRadius: pointRadii,
+                                            fill: true,
+                                            tension: 0.3,
+                                        }],
+                                    },
+                                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+                                });
                             });
-                        });
-                    </script>
-                @endpush
+                        </script>
+                    @endpush
+                @endif
             </div>
 
             {{-- Batch Pass/Fail Rates --}}

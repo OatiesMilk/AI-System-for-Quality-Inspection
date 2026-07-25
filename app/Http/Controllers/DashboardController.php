@@ -104,6 +104,7 @@ class DashboardController extends Controller
     {
         $request->validate([
             'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+            'trend_batch_id' => ['nullable', 'integer', 'exists:batches,id'],
         ]);
 
         $batches = Batch::orderByDesc('production_date')->orderByDesc('id')->get(['id', 'batch_code']);
@@ -148,20 +149,52 @@ class DashboardController extends Controller
             ];
         });
 
-        // Defect trend — last 7 days
-        $defectTrend = Defect::query()
-            ->selectRaw('DATE(defects.created_at) as date, count(*) as total')
-            ->where('defects.created_at', '>=', now()->subDays(6)->startOfDay())
-            ->groupBy('date')
-            ->orderBy('date')
-            ->pluck('total', 'date');
+        // Defect trend — hourly pattern, either for a single batch or the overall historical pattern
+        $selectedTrendBatchId = $request->integer('trend_batch_id') ?: null;
+        $trendMode = $selectedTrendBatchId ? 'batch' : 'overall';
+
+        $hourlyDefects = Defect::query()
+            ->join('inspections', 'defects.inspection_id', '=', 'inspections.id')
+            ->when($selectedTrendBatchId, fn ($query) => $query->where('inspections.batch_id', $selectedTrendBatchId))
+            ->selectRaw('HOUR(defects.created_at) as hour, count(*) as total')
+            ->groupBy('hour')
+            ->pluck('total', 'hour');
 
         $trendLabels = collect();
         $trendValues = collect();
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i)->toDateString();
-            $trendLabels->push(now()->subDays($i)->format('M j'));
-            $trendValues->push($defectTrend->get($date, 0));
+        for ($hour = 0; $hour < 24; $hour++) {
+            $trendLabels->push(now()->setTime($hour, 0)->format('g A'));
+            $trendValues->push($hourlyDefects->get($hour, 0));
+        }
+
+        // Overall mode: surface which hours historically spike and what kind of defect drives each spike
+        $hourlySpikes = collect();
+        $spikeHours = collect();
+        if ($trendMode === 'overall' && $trendValues->sum() > 0) {
+            $average = $trendValues->avg();
+            $threshold = max(2, $average * 1.5);
+
+            $hourlyByType = Defect::query()
+                ->selectRaw('HOUR(created_at) as hour, defect_type, count(*) as total')
+                ->groupBy('hour', 'defect_type')
+                ->get()
+                ->groupBy('hour');
+
+            $hourlySpikes = collect(range(0, 23))
+                ->filter(fn ($hour) => $trendValues[$hour] >= $threshold)
+                ->map(function ($hour) use ($trendValues, $hourlyByType) {
+                    $topType = optional($hourlyByType->get($hour))->sortByDesc('total')->first();
+
+                    return [
+                        'hour'          => now()->setTime($hour, 0)->format('g A'),
+                        'total'         => $trendValues[$hour],
+                        'dominant_type' => $topType ? str_replace('_', ' ', $topType->defect_type) : null,
+                    ];
+                })
+                ->sortByDesc('total')
+                ->values();
+
+            $spikeHours = $hourlySpikes->pluck('hour');
         }
 
         // Shift comparison — AM vs PM pass rate
@@ -224,8 +257,12 @@ class DashboardController extends Controller
             'overriddenCount',
             'overrideRate',
             'batchStats',
+            'selectedTrendBatchId',
+            'trendMode',
             'trendLabels',
             'trendValues',
+            'hourlySpikes',
+            'spikeHours',
             'shiftStats',
             'checkpointStats',
             'inspectorStats',
