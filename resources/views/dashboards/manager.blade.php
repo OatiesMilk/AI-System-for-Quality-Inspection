@@ -128,7 +128,7 @@
                 @if ($trendValues->sum() === 0)
                     <p class="text-gray-500">No defect data recorded yet.</p>
                 @else
-                    <div class="max-w-2xl">
+                    <div class="w-full">
                         <canvas id="defectTrendChart"
                             data-labels="{{ $trendLabels->toJson() }}"
                             data-values="{{ $trendValues->toJson() }}"
