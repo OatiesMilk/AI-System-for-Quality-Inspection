@@ -167,7 +167,7 @@ class InspectorDashboardTest extends TestCase
 
         $defect = Defect::create([
             'inspection_id' => $inspection->id,
-            'defect_type' => 'excess_glue',
+            'defect_type' => 'glue',
             'confidence_score' => 0.70,
             'bounding_box' => null,
         ]);

@@ -54,7 +54,7 @@
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($defect->confidence_score * 100, 1) }}%</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                                     <label class="inline-flex items-center gap-2">
-                                                        <input type="checkbox" name="defects[{{ $defect->id }}]" value="1" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                                        <input type="checkbox" name="defects[{{ $defect->id }}]" value="1" {{ $defect->confirmed ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                                         <span class="text-xs text-gray-500">Uncheck to dismiss as a false positive</span>
                                                     </label>
                                                 </td>
@@ -70,13 +70,13 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Final Decision</h3>
                         <div class="flex gap-4">
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="pass" required> Pass
+                                <input type="radio" name="action" value="pass" required {{ $inspection->action === 'pass' ? 'checked' : '' }}> Pass
                             </label>
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="rework"> Rework
+                                <input type="radio" name="action" value="rework" {{ $inspection->action === 'rework' ? 'checked' : '' }}> Rework
                             </label>
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="reject"> Reject
+                                <input type="radio" name="action" value="reject" {{ $inspection->action === 'reject' ? 'checked' : '' }}> Reject
                             </label>
                         </div>
                     </div>

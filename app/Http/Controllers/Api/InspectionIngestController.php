@@ -31,7 +31,7 @@ class InspectionIngestController extends Controller
             'checkpoint' => ['required', 'in:preparation,finishing'],
             'image' => ['required', 'image', 'max:10240'],
             'defects' => ['array'],
-            'defects.*.defect_type' => ['required_with:defects', 'in:scratch,cut,hole,crease,excess_glue,excess_stitch'],
+            'defects.*.defect_type' => ['required_with:defects', 'in:scratch,cut,hole,crease,glue,stitch'],
             'defects.*.confidence_score' => ['required_with:defects', 'numeric', 'between:0,1'],
             'defects.*.bounding_box' => ['nullable', 'array'],
             'defects.*.bounding_box.x' => ['required_with:defects.*.bounding_box', 'numeric', 'between:0,1'],

@@ -63,7 +63,7 @@ class ConstructorDashboardTest extends TestCase
 
         Defect::create([
             'inspection_id' => $inspection->id,
-            'defect_type' => 'excess_glue',
+            'defect_type' => 'glue',
             'confidence_score' => 0.74,
             'bounding_box' => ['x' => 0.4, 'y' => 0.5, 'width' => 0.15, 'height' => 0.1],
         ]);

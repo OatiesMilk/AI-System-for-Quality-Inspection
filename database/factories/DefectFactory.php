@@ -21,7 +21,7 @@ class DefectFactory extends Factory
         return [
             'inspection_id' => Inspection::factory(),
             'defect_type' => fake()->randomElement([
-                'scratch', 'cut', 'hole', 'crease', 'excess_glue', 'excess_stitch',
+                'scratch', 'cut', 'hole', 'crease', 'glue', 'stitch',
             ]),
             'confidence_score' => fake()->randomFloat(4, 0.55, 0.99),
             'bounding_box' => [

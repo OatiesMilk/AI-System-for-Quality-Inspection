@@ -84,7 +84,7 @@ class InspectionIngestApiTest extends TestCase
                     'bounding_box' => ['x' => 0.2, 'y' => 0.3, 'width' => 0.1, 'height' => 0.1],
                 ],
                 [
-                    'defect_type' => 'excess_glue',
+                    'defect_type' => 'glue',
                     'confidence_score' => 0.6,
                 ],
             ],

@@ -15,8 +15,8 @@ class DecisionSupportService
         'cut'          => ['Cutting machine misalignment', 'Worn cutting blade', 'Improper cutting procedure'],
         'hole'         => ['Needle damage', 'Incorrect stitching settings', 'Material puncture during processing'],
         'crease'       => ['Improper lasting process', 'Incorrect storage', 'Material folding during assembly'],
-        'excess_glue'  => ['Excessive adhesive application', 'Glue nozzle calibration issue', 'Operator error during sole attachment'],
-        'excess_stitch'=> ['Sewing machine tension', 'Needle wear', 'Improper stitching process'],
+        'glue'         => ['Excessive adhesive application', 'Glue nozzle calibration issue', 'Operator error during sole attachment'],
+        'stitch'       => ['Sewing machine tension', 'Needle wear', 'Improper stitching process'],
     ];
 
     // Minimum current-period defect count before a defect type is eligible to be flagged as spiking.
@@ -383,8 +383,8 @@ class DecisionSupportService
                 'cut'           => 'Inspect cutting machine calibration and blade condition.',
                 'hole'          => 'Review stitching machine needle condition and settings.',
                 'crease'        => 'Review lasting process and material storage conditions.',
-                'excess_glue'   => 'Inspect glue nozzle calibration and adhesive application procedure.',
-                'excess_stitch' => 'Review sewing machine tension and stitching procedure.',
+                'glue'          => 'Inspect glue nozzle calibration and adhesive application procedure.',
+                'stitch'        => 'Review sewing machine tension and stitching procedure.',
                 default         => "Investigate root cause for '{$type}' defects.",
             };
         }
