@@ -33,14 +33,40 @@
                                 <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
                                 <div class="flex items-center gap-4 pt-1">
                                     <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
-                                    <form method="POST" action="{{ route('constructor.inspections.resolve', $inspection) }}" class="flex-1">
+                                    <button
+                                        type="button"
+                                        x-data=""
+                                        x-on:click="$dispatch('open-modal', 'confirm-resolve-mobile-{{ $inspection->id }}')"
+                                        class="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700"
+                                    >
+                                        {{ __('Mark Resolved') }}
+                                    </button>
+                                </div>
+
+                                <x-modal name="confirm-resolve-mobile-{{ $inspection->id }}" focusable>
+                                    <form method="POST" action="{{ route('constructor.inspections.resolve', $inspection) }}" class="p-6">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="w-full px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700">
-                                            {{ __('Mark Resolved') }}
-                                        </button>
+
+                                        <h2 class="text-lg font-medium text-gray-900">
+                                            {{ __('Mark this rework as resolved?') }}
+                                        </h2>
+
+                                        <p class="mt-1 text-sm text-gray-600">
+                                            {{ __('Batch :batch — this confirms the flagged defects have been fixed.', ['batch' => $inspection->batch?->batch_code ?? '-']) }}
+                                        </p>
+
+                                        <div class="mt-6 flex justify-end gap-3">
+                                            <x-secondary-button x-on:click="$dispatch('close')">
+                                                {{ __('Cancel') }}
+                                            </x-secondary-button>
+
+                                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700">
+                                                {{ __('Mark Resolved') }}
+                                            </button>
+                                        </div>
                                     </form>
-                                </div>
+                                </x-modal>
                             </div>
                         @endforeach
                     </div>
@@ -71,13 +97,39 @@
                                             <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <form method="POST" action="{{ route('constructor.inspections.resolve', $inspection) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="inline-block px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-md hover:bg-indigo-700">
-                                                    {{ __('Mark Resolved') }}
-                                                </button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                x-data=""
+                                                x-on:click="$dispatch('open-modal', 'confirm-resolve-desktop-{{ $inspection->id }}')"
+                                                class="inline-block px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-md hover:bg-indigo-700"
+                                            >
+                                                {{ __('Mark Resolved') }}
+                                            </button>
+
+                                            <x-modal name="confirm-resolve-desktop-{{ $inspection->id }}" focusable>
+                                                <form method="POST" action="{{ route('constructor.inspections.resolve', $inspection) }}" class="p-6">
+                                                    @csrf
+                                                    @method('PATCH')
+
+                                                    <h2 class="text-lg font-medium text-gray-900">
+                                                        {{ __('Mark this rework as resolved?') }}
+                                                    </h2>
+
+                                                    <p class="mt-1 text-sm text-gray-600">
+                                                        {{ __('Batch :batch - this confirms the flagged defects have been fixed.', ['batch' => $inspection->batch?->batch_code ?? '-']) }}
+                                                    </p>
+
+                                                    <div class="mt-6 flex justify-end gap-3">
+                                                        <x-secondary-button x-on:click="$dispatch('close')">
+                                                            {{ __('Cancel') }}
+                                                        </x-secondary-button>
+
+                                                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700">
+                                                            {{ __('Mark Resolved') }}
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </x-modal>
                                         </td>
                                     </tr>
                                 @endforeach
