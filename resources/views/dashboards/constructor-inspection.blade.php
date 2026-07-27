@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <dl class="grid grid-cols-3 gap-4 text-sm mb-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-6">
                     <div>
                         <dt class="text-gray-500">Batch</dt>
                         <dd class="font-medium">{{ $inspection->batch?->batch_code ?? '-' }}</dd>
@@ -30,13 +30,13 @@
                     @if ($inspection->defects->isEmpty())
                         <p class="text-gray-500">No defects recorded for this inspection.</p>
                     @else
-                        <div class="overflow-hidden border border-gray-200 rounded-lg">
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        <th class="px-6 py-3">Type</th>
-                                        <th class="px-6 py-3">Confidence</th>
-                                        <th class="px-6 py-3">Inspector Confirmed</th>
+                                        <th class="px-6 py-3 whitespace-nowrap">Type</th>
+                                        <th class="px-6 py-3 whitespace-nowrap">Confidence</th>
+                                        <th class="px-6 py-3 whitespace-nowrap">Inspector Confirmed</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">

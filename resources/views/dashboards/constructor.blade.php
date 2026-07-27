@@ -19,7 +19,34 @@
                 @if ($reworkInspections->isEmpty())
                     <p class="text-gray-500">No rework items assigned to you right now.</p>
                 @else
-                    <div class="overflow-hidden border border-gray-200 rounded-lg">
+                    {{-- Card layout: phones and small tablets --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach ($reworkInspections as $inspection)
+                            <div class="border border-gray-200 rounded-lg p-4 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
+                                    <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 capitalize">
+                                    {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                </p>
+                                <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
+                                <div class="flex items-center gap-4 pt-1">
+                                    <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
+                                    <form method="POST" action="{{ route('constructor.inspections.resolve', $inspection) }}" class="flex-1">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="w-full px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700">
+                                            {{ __('Mark Resolved') }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Table layout: medium screens and up --}}
+                    <div class="hidden md:block overflow-hidden border border-gray-200 rounded-lg">
                         <table class="w-full table-fixed divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -66,7 +93,30 @@
                 @if ($resolvedReworks->isEmpty())
                     <p class="text-gray-500">No resolved rework items yet.</p>
                 @else
-                    <div class="overflow-hidden border border-gray-200 rounded-lg">
+                    {{-- Card layout: phones and small tablets --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach ($resolvedReworks as $inspection)
+                            <div class="border border-gray-200 rounded-lg p-4 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
+                                    <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 capitalize">
+                                    {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                </p>
+                                <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
+                                <div class="flex items-center justify-between pt-1">
+                                    <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                        Resolved {{ $inspection->reworked_at->diffForHumans() }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Table layout: medium screens and up --}}
+                    <div class="hidden md:block overflow-hidden border border-gray-200 rounded-lg">
                         <table class="w-full table-fixed divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
