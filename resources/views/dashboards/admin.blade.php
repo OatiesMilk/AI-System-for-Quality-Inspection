@@ -44,7 +44,7 @@
             {{-- Login Trend + Per-User Activity --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Login Activity — Last 7 Days</h3>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Login Activity (Last 7 Days)</h3>
                     <canvas id="loginTrendChart"
                         data-labels="{{ $loginTrendLabels->toJson() }}"
                         data-values="{{ $loginTrendValues->toJson() }}"></canvas>
