@@ -77,7 +77,7 @@
                         <table class="w-full table-fixed divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <th class="px-6 py-3 w-[5%]">Inspection #</th>
+                                    <th class="px-6 py-3 w-[10%]">Inspection #</th>
                                     <th class="px-6 py-3 w-[15%]">Batch</th>
                                     <th class="px-6 py-3 w-[10%]">Checkpoint</th>
                                     <th class="px-6 py-3 w-[24%]">Defects</th>

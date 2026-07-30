@@ -22,6 +22,7 @@ class Inspection extends Model
         'ai_override',
         'inspected_at',
         'reworked_at',
+        'resolved_by',
     ];
 
     protected function casts(): array
@@ -41,6 +42,11 @@ class Inspection extends Model
     public function inspector(): BelongsTo
     {
         return $this->belongsTo(User::class, 'inspector_id');
+    }
+
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
     }
 
     public function defects(): HasMany

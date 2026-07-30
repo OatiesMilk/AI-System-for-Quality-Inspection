@@ -202,6 +202,7 @@
                                     <th class="py-2 pr-4">Rework</th>
                                     <th class="py-2 pr-4">Reject</th>
                                     <th class="py-2 pr-4">Pass Rate</th>
+                                    <th class="py-2 pr-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -222,6 +223,9 @@
                                             @else
                                                 —
                                             @endif
+                                        </td>
+                                        <td class="py-2 pr-4">
+                                            <a href="{{ route('manager.batches.edit', $batch['id']) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">Edit</a>
                                         </td>
                                     </tr>
                                 @endforeach

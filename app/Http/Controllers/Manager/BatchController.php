@@ -39,4 +39,29 @@ class BatchController extends Controller
         return redirect()->route('dashboard.manager')
             ->with('status', "Batch {$batch->batch_code} created.");
     }
+
+    public function edit(Batch $batch): View
+    {
+        return view('dashboards.manager-batch-edit', compact('batch'));
+    }
+
+    public function update(Request $request, Batch $batch): RedirectResponse
+    {
+        $validated = $request->validate([
+            'batch_code' => ['required', 'string', 'max:255', 'unique:batches,batch_code,'.$batch->id],
+            'production_date' => ['required', 'date'],
+            'shift' => ['required', 'in:am,pm'],
+            'manufacturing_stage' => ['required', 'in:preparation,finishing'],
+        ]);
+
+        $batch->update($validated);
+
+        AuditLog::record('batch.updated', $request->user(), [
+            'batch_id' => $batch->id,
+            'batch_code' => $batch->batch_code,
+        ]);
+
+        return redirect()->route('dashboard.manager')
+            ->with('status', "Batch {$batch->batch_code} updated.");
+    }
 }

@@ -37,6 +37,9 @@ class DashboardController extends Controller
             'ai_override' => ['nullable', 'in:0,1'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
+            'resolved_by' => ['nullable', 'integer', 'exists:users,id'],
+            'resolved_date_from' => ['nullable', 'date'],
+            'resolved_date_to' => ['nullable', 'date'],
         ]);
 
         $pendingInspections = Inspection::with('batch')
@@ -55,7 +58,19 @@ class DashboardController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('dashboards.inspector', compact('pendingInspections', 'reviewedInspections'));
+        $resolvedReworks = Inspection::with('batch', 'resolvedBy')
+            ->where('action', 'rework')
+            ->whereNotNull('reworked_at')
+            ->when($request->filled('resolved_by'), fn ($query) => $query->where('resolved_by', $request->integer('resolved_by')))
+            ->when($request->filled('resolved_date_from'), fn ($query) => $query->whereDate('reworked_at', '>=', $request->date('resolved_date_from')))
+            ->when($request->filled('resolved_date_to'), fn ($query) => $query->whereDate('reworked_at', '<=', $request->date('resolved_date_to')))
+            ->latest('reworked_at')
+            ->paginate(10, ['*'], 'resolved_page')
+            ->withQueryString();
+
+        $constructors = User::where('role', 'shoe_constructor')->orderBy('name')->get();
+
+        return view('dashboards.inspector', compact('pendingInspections', 'reviewedInspections', 'resolvedReworks', 'constructors'));
     }
 
     public function showInspection(Inspection $inspection): View
@@ -150,6 +165,7 @@ class DashboardController extends Controller
             $reject = $batch->inspections->where('action', 'reject')->count();
 
             return [
+                'id'         => $batch->id,
                 'batch_code' => $batch->batch_code,
                 'shift'      => $batch->shift,
                 'stage'      => $batch->manufacturing_stage,
@@ -399,7 +415,10 @@ class DashboardController extends Controller
 
     public function resolveRework(Request $request, Inspection $inspection): RedirectResponse
     {
-        $inspection->update(['reworked_at' => now()]);
+        $inspection->update([
+            'reworked_at' => now(),
+            'resolved_by' => $request->user()->id,
+        ]);
 
         AuditLog::record('inspection.reworked', $request->user(), [
             'inspection_id' => $inspection->id,

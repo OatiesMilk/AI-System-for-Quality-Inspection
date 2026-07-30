@@ -33,6 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('manager.batches.create');
         Route::post('/manager/batches', [BatchController::class, 'store'])
             ->name('manager.batches.store');
+        Route::get('/manager/batches/{batch}/edit', [BatchController::class, 'edit'])
+            ->name('manager.batches.edit');
+        Route::patch('/manager/batches/{batch}', [BatchController::class, 'update'])
+            ->name('manager.batches.update');
 
         Route::get('/manager/decision-support', [DecisionSupportController::class, 'index'])
             ->name('decision-support.index');
