@@ -7,9 +7,11 @@ use App\Models\Batch;
 use App\Models\Defect;
 use App\Models\Inspection;
 use App\Models\User;
+use App\Notifications\InspectionMarkedForRework;
 use App\Services\DecisionSupportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -95,6 +97,16 @@ class DashboardController extends Controller
             'previous_action' => $previousAction,
             'ai_override' => $aiOverride,
         ]);
+
+        if ($validated['action'] === 'rework') {
+            $shift = $inspection->batch?->shift;
+
+            $constructors = User::where('role', 'shoe_constructor')
+                ->when($shift, fn ($query) => $query->where('shift', $shift))
+                ->get();
+
+            Notification::send($constructors, new InspectionMarkedForRework($inspection));
+        }
 
         return redirect()->route('dashboard.inspector')
             ->with('status', "Inspection #{$inspection->id} marked as {$validated['action']}.");

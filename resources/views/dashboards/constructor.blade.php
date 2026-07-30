@@ -27,8 +27,9 @@
                                     <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
                                     <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
                                 </div>
+                                <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
                                 <p class="text-sm text-gray-600 capitalize">
-                                    {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                    {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                 </p>
                                 <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
                                 <div class="flex items-center gap-4 pt-1">
@@ -76,21 +77,23 @@
                         <table class="w-full table-fixed divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <th class="px-6 py-3 w-[14%]">Batch</th>
-                                    <th class="px-6 py-3 w-[12%]">Checkpoint</th>
-                                    <th class="px-6 py-3 w-[28%]">Defects</th>
-                                    <th class="px-6 py-3 w-[16%]">Flagged</th>
+                                    <th class="px-6 py-3 w-[5%]">Inspection #</th>
+                                    <th class="px-6 py-3 w-[15%]">Batch</th>
+                                    <th class="px-6 py-3 w-[10%]">Checkpoint</th>
+                                    <th class="px-6 py-3 w-[24%]">Defects</th>
+                                    <th class="px-6 py-3 w-[14%]">Flagged</th>
                                     <th class="px-6 py-3 w-[10%]">Image</th>
-                                    <th class="px-6 py-3 w-[20%]">Action</th>
+                                    <th class="px-6 py-3 w-[22%]">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($reworkInspections as $inspection)
                                     <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
-                                            {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                            {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->created_at->diffForHumans() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -153,8 +156,9 @@
                                     <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
                                     <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
                                 </div>
+                                <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
                                 <p class="text-sm text-gray-600 capitalize">
-                                    {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                    {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                 </p>
                                 <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
                                 <div class="flex items-center justify-between pt-1">
@@ -172,21 +176,23 @@
                         <table class="w-full table-fixed divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <th class="px-6 py-3 w-[14%]">Batch</th>
-                                    <th class="px-6 py-3 w-[12%]">Checkpoint</th>
-                                    <th class="px-6 py-3 w-[28%]">Defects</th>
-                                    <th class="px-6 py-3 w-[16%]">Flagged</th>
+                                    <th class="px-6 py-3 w-[8%]">Inspection #</th>
+                                    <th class="px-6 py-3 w-[12%]">Batch</th>
+                                    <th class="px-6 py-3 w-[10%]">Checkpoint</th>
+                                    <th class="px-6 py-3 w-[24%]">Defects</th>
+                                    <th class="px-6 py-3 w-[14%]">Flagged</th>
                                     <th class="px-6 py-3 w-[10%]">Image</th>
-                                    <th class="px-6 py-3 w-[20%]">Resolved</th>
+                                    <th class="px-6 py-3 w-[22%]">Resolved</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($resolvedReworks as $inspection)
                                     <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
-                                            {{ $inspection->defects->pluck('defect_type')->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
+                                            {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->created_at->diffForHumans() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
