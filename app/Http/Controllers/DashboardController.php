@@ -104,6 +104,8 @@ class DashboardController extends Controller
             'action' => $validated['action'],
             'ai_override' => $aiOverride,
             'inspected_at' => now(),
+            'reworked_at' => null,
+            'resolved_by' => null,
         ]);
 
         AuditLog::record($previousAction ? 'inspection.revalidated' : 'inspection.validated', $request->user(), [
@@ -360,9 +362,7 @@ class DashboardController extends Controller
             $loginTrendValues->push($loginTrend->get($date, 0));
         }
 
-        // Recent user-related audit events only
         $userAuditLogs = AuditLog::with('user')
-            ->whereIn('action', ['user.login', 'user.logout', 'user.created', 'user.updated', 'inspection.validated', 'inspection.reworked', 'batch.created'])
             ->when($request->filled('action'), fn ($query) => $query->where('action', $request->string('action')))
             ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('date_from')))
