@@ -185,6 +185,56 @@ class InspectorDashboardTest extends TestCase
         $this->assertFalse($defect->confirmed);
     }
 
+    public function test_marking_an_inspection_for_rework_requires_a_station(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+        $inspection = $this->makeInspection();
+
+        $response = $this->actingAs($inspector)
+            ->patch("/inspector/inspections/{$inspection->id}", [
+                'action' => 'rework',
+            ]);
+
+        $response->assertSessionHasErrors('rework_station');
+    }
+
+    public function test_marking_an_inspection_for_rework_stores_the_responsible_station(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+        $inspection = $this->makeInspection();
+
+        $response = $this->actingAs($inspector)
+            ->patch("/inspector/inspections/{$inspection->id}", [
+                'action' => 'rework',
+                'rework_station' => 'skiving',
+            ]);
+
+        $response->assertRedirect(route('dashboard.inspector'));
+
+        $inspection->refresh();
+        $this->assertSame('rework', $inspection->action);
+        $this->assertSame('skiving', $inspection->rework_station);
+        $this->assertSame('not_started', $inspection->rework_status);
+    }
+
+    public function test_reviewed_inspections_table_shows_the_station_and_status_for_reworks(): void
+    {
+        $inspector = User::factory()->create(['role' => 'quality_inspector']);
+        $this->makeInspection([
+            'action' => 'rework',
+            'rework_station' => 'marking',
+            'rework_status' => 'in_progress',
+            'inspector_id' => $inspector->id,
+            'inspected_at' => now(),
+        ]);
+
+        $response = $this->actingAs($inspector)->get('/inspector');
+
+        $response->assertOk();
+        $response->assertSee('marking');
+        $response->assertSee('In Progress');
+    }
+
     public function test_an_invalid_action_is_rejected(): void
     {
         $inspector = User::factory()->create(['role' => 'quality_inspector']);

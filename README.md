@@ -151,11 +151,11 @@ The YOLO detection pipeline posts inspection results into the system via a machi
 
 ### Resolving the current batch automatically
 
-**Endpoint:** `GET /api/batches/latest?checkpoint=preparation&shift=am`
+**Endpoint:** `GET /api/batches/latest?checkpoint=preparation`
 
-Lets the capture pipeline target whichever batch is currently open without hardcoding a `batch_id`. Returns the most recently created batch (`latest('id')`, not `created_at`, so it's unambiguous even when two batches are created in the same second) matching the given `checkpoint` (required) and `shift` (optional - omit to match any shift).
+Lets the capture pipeline target whichever batch is currently open without hardcoding a `batch_id`. Returns the most recently created batch (`latest('id')`, not `created_at`, so it's unambiguous even when two batches are created in the same second) matching the given `checkpoint` (required).
 
-**Response:** `200 OK` with `{ "batch_id", "batch_code", "shift", "manufacturing_stage" }`, or `404` if nothing matches. Same auth as the ingestion endpoint above.
+**Response:** `200 OK` with `{ "batch_id", "batch_code", "manufacturing_stage" }`, or `404` if nothing matches. Same auth as the ingestion endpoint above.
 
 `live_feed_to_system.py` uses this automatically when run without `--batch-id` - it re-resolves the latest matching batch right before every capture, so if the Product Manager creates a new batch mid-session, the very next `c` press lands in the new batch with no restart needed.
 

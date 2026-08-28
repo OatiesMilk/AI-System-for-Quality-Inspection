@@ -59,8 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/constructor', [DashboardController::class, 'constructor'])->name('dashboard.constructor');
         Route::get('/constructor/inspections/{inspection}', [DashboardController::class, 'showConstructorInspection'])
             ->name('constructor.inspections.show');
-        Route::patch('/constructor/inspections/{inspection}/resolve', [DashboardController::class, 'resolveRework'])
-            ->name('constructor.inspections.resolve');
+        Route::patch('/constructor/inspections/{inspection}/status', [DashboardController::class, 'updateReworkStatus'])
+            ->name('constructor.inspections.update-status');
     });
 });
 

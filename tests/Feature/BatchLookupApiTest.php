@@ -27,14 +27,12 @@ class BatchLookupApiTest extends TestCase
         $older = Batch::create([
             'batch_code' => 'OLDER-001',
             'production_date' => now()->subDay(),
-            'shift' => 'am',
             'manufacturing_stage' => 'preparation',
         ]);
 
         $newer = Batch::create([
             'batch_code' => 'NEWER-001',
             'production_date' => now(),
-            'shift' => 'am',
             'manufacturing_stage' => 'preparation',
         ]);
 
@@ -45,31 +43,6 @@ class BatchLookupApiTest extends TestCase
             'batch_id' => $newer->id,
             'batch_code' => 'NEWER-001',
         ]);
-    }
-
-    public function test_it_filters_by_shift_when_provided(): void
-    {
-        $service = User::factory()->create(['role' => 'system_admin']);
-        Sanctum::actingAs($service, ['inspections:create']);
-
-        Batch::create([
-            'batch_code' => 'AM-BATCH',
-            'production_date' => now(),
-            'shift' => 'am',
-            'manufacturing_stage' => 'finishing',
-        ]);
-
-        $pmBatch = Batch::create([
-            'batch_code' => 'PM-BATCH',
-            'production_date' => now(),
-            'shift' => 'pm',
-            'manufacturing_stage' => 'finishing',
-        ]);
-
-        $response = $this->getJson('/api/batches/latest?checkpoint=finishing&shift=pm');
-
-        $response->assertOk();
-        $response->assertJson(['batch_id' => $pmBatch->id]);
     }
 
     public function test_it_returns_404_when_no_batch_matches(): void

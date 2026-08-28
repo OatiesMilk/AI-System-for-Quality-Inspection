@@ -31,7 +31,7 @@ class InspectionMarkedForRework extends Notification
             ->line("Inspection #{$inspection->id} has been marked for rework by quality inspection.")
             ->line("Batch: {$batch?->batch_code}")
             ->line('Checkpoint: '.str_replace('_', ' ', $inspection->checkpoint))
-            ->when($batch?->shift, fn ($mail, $shift) => $mail->line("Shift: {$shift}"))
+            ->when($inspection->rework_station, fn ($mail, $station) => $mail->line('Responsible station: '.str_replace('_', ' ', $station)))
             ->action('View inspection', $this->publicUrl(route('constructor.inspections.show', $inspection, false)))
             ->line('Please resolve the rework and mark it complete once addressed.');
     }

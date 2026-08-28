@@ -28,7 +28,7 @@
                     <!-- Role -->
                     <div class="mt-4">
                         <x-input-label for="role" :value="__('Role')" />
-                        <select id="role" name="role" required onchange="document.getElementById('shift-field').classList.toggle('hidden', this.value !== 'shoe_constructor')"
+                        <select id="role" name="role" required
                             class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                             <option value="" disabled {{ old('role') ? '' : 'selected' }}>{{ __('Select a role') }}</option>
                             @foreach ($roles as $role)
@@ -38,18 +38,6 @@
                             @endforeach
                         </select>
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
-                    </div>
-
-                    <!-- Shift (shoe constructors only) -->
-                    <div id="shift-field" class="mt-4 {{ old('role') === 'shoe_constructor' ? '' : 'hidden' }}">
-                        <x-input-label for="shift" :value="__('Shift (Batch 1 = AM, Batch 2 = PM)')" />
-                        <select id="shift" name="shift"
-                            class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                            <option value="" {{ old('shift') ? '' : 'selected' }}>{{ __('Not assigned') }}</option>
-                            <option value="am" {{ old('shift') === 'am' ? 'selected' : '' }}>{{ __('AM (Batch 1)') }}</option>
-                            <option value="pm" {{ old('shift') === 'pm' ? 'selected' : '' }}>{{ __('PM (Batch 2)') }}</option>
-                        </select>
-                        <x-input-error :messages="$errors->get('shift')" class="mt-2" />
                     </div>
 
                     <!-- Password -->

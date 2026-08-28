@@ -96,48 +96,6 @@ class AdminDashboardTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_assign_a_shift_when_creating_a_constructor_account(): void
-    {
-        $admin = User::factory()->create(['role' => 'system_admin']);
-
-        $response = $this->actingAs($admin)->post('/admin/users', [
-            'name' => 'New Constructor',
-            'email' => 'new.constructor@cpoint.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'shoe_constructor',
-            'shift' => 'pm',
-        ]);
-
-        $response->assertRedirect(route('dashboard.admin'));
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'new.constructor@cpoint.test',
-            'role' => 'shoe_constructor',
-            'shift' => 'pm',
-        ]);
-    }
-
-    public function test_shift_is_discarded_for_roles_other_than_shoe_constructor(): void
-    {
-        $admin = User::factory()->create(['role' => 'system_admin']);
-
-        $this->actingAs($admin)->post('/admin/users', [
-            'name' => 'New Inspector',
-            'email' => 'shifted.inspector@cpoint.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'quality_inspector',
-            'shift' => 'am',
-        ]);
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'shifted.inspector@cpoint.test',
-            'role' => 'quality_inspector',
-            'shift' => null,
-        ]);
-    }
-
     public function test_admin_can_create_a_system_admin_account(): void
     {
         $admin = User::factory()->create(['role' => 'system_admin']);

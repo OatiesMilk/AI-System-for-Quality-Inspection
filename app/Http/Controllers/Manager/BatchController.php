@@ -21,7 +21,7 @@ class BatchController extends Controller
         $validated = $request->validate([
             'batch_code' => ['required', 'string', 'max:255', 'unique:batches,batch_code'],
             'production_date' => ['required', 'date'],
-            'shift' => ['required', 'in:am,pm'],
+            'expected_pieces' => ['required', 'integer', 'min:1'],
             'manufacturing_stage' => ['required', 'in:preparation,finishing'],
         ]);
 
@@ -33,7 +33,7 @@ class BatchController extends Controller
         AuditLog::record('batch.created', $request->user(), [
             'batch_id' => $batch->id,
             'batch_code' => $batch->batch_code,
-            'shift' => $batch->shift,
+            'expected_pieces' => $batch->expected_pieces,
         ]);
 
         return redirect()->route('dashboard.manager')
@@ -50,7 +50,7 @@ class BatchController extends Controller
         $validated = $request->validate([
             'batch_code' => ['required', 'string', 'max:255', 'unique:batches,batch_code,'.$batch->id],
             'production_date' => ['required', 'date'],
-            'shift' => ['required', 'in:am,pm'],
+            'expected_pieces' => ['required', 'integer', 'min:1'],
             'manufacturing_stage' => ['required', 'in:preparation,finishing'],
         ]);
 

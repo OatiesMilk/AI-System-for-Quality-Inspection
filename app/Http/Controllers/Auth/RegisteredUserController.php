@@ -47,7 +47,6 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', 'string', 'in:'.implode(',', self::ASSIGNABLE_ROLES)],
-            'shift' => ['nullable', 'in:am,pm'],
         ]);
 
         $user = User::create([
@@ -55,7 +54,6 @@ class RegisteredUserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
-            'shift' => $validated['role'] === 'shoe_constructor' ? ($validated['shift'] ?? null) : null,
         ]);
 
         event(new Registered($user));

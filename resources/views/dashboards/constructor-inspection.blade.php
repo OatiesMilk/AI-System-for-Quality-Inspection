@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm mb-6">
                     <div>
                         <dt class="text-gray-500">Batch</dt>
                         <dd class="font-medium">{{ $inspection->batch?->batch_code ?? '-' }}</dd>
@@ -18,10 +18,21 @@
                         <dd class="font-medium capitalize">{{ $inspection->checkpoint }}</dd>
                     </div>
                     <div>
+                        <dt class="text-gray-500">Station</dt>
+                        <dd class="font-medium capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</dd>
+                    </div>
+                    <div>
                         <dt class="text-gray-500">Flagged</dt>
                         <dd class="font-medium">{{ $inspection->created_at->format('M j, Y g:i A') }}</dd>
                     </div>
                 </dl>
+
+                @if ($inspection->action === 'rework')
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="text-sm text-gray-500">Progress:</span>
+                        @include('dashboards.partials.rework-status-form', ['inspection' => $inspection])
+                    </div>
+                @endif
 
                 @include('dashboards.partials.inspection-image', ['inspection' => $inspection])
 

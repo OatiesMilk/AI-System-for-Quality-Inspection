@@ -70,15 +70,29 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Final Decision</h3>
                         <div class="flex gap-4">
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="pass" required {{ $inspection->action === 'pass' ? 'checked' : '' }}> Pass
+                                <input type="radio" name="action" value="pass" required onchange="document.getElementById('rework-station-field').classList.add('hidden')" {{ $inspection->action === 'pass' ? 'checked' : '' }}> Pass
                             </label>
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="rework" {{ $inspection->action === 'rework' ? 'checked' : '' }}> Rework
+                                <input type="radio" name="action" value="rework" onchange="document.getElementById('rework-station-field').classList.remove('hidden')" {{ $inspection->action === 'rework' ? 'checked' : '' }}> Rework
                             </label>
                             <label class="inline-flex items-center gap-2">
-                                <input type="radio" name="action" value="reject" {{ $inspection->action === 'reject' ? 'checked' : '' }}> Reject
+                                <input type="radio" name="action" value="reject" onchange="document.getElementById('rework-station-field').classList.add('hidden')" {{ $inspection->action === 'reject' ? 'checked' : '' }}> Reject
                             </label>
                         </div>
+                    </div>
+
+                    <div id="rework-station-field" class="{{ $inspection->action === 'rework' ? '' : 'hidden' }}">
+                        <x-input-label for="rework_station" :value="__('Responsible Station')" />
+                        <select id="rework_station" name="rework_station"
+                            class="block mt-1 w-full max-w-xs border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <option value="" disabled {{ $inspection->rework_station ? '' : 'selected' }}>{{ __('Select a station') }}</option>
+                            <option value="cutting" {{ $inspection->rework_station === 'cutting' ? 'selected' : '' }}>{{ __('Cutting') }}</option>
+                            <option value="marking" {{ $inspection->rework_station === 'marking' ? 'selected' : '' }}>{{ __('Marking') }}</option>
+                            <option value="skiving" {{ $inspection->rework_station === 'skiving' ? 'selected' : '' }}>{{ __('Skiving') }}</option>
+                            <option value="upper_making" {{ $inspection->rework_station === 'upper_making' ? 'selected' : '' }}>{{ __('Upper Making') }}</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('Which station is responsible for fixing this.') }}</p>
+                        <x-input-error :messages="$errors->get('rework_station')" class="mt-2" />
                     </div>
 
                     <x-primary-button>Submit Validation</x-primary-button>

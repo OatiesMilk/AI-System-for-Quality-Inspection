@@ -11,6 +11,7 @@ use App\Notifications\InspectionMarkedForRework;
 use App\Services\DecisionSupportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
@@ -84,6 +85,7 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'action' => ['required', 'in:pass,rework,reject'],
+            'rework_station' => ['required_if:action,rework', 'nullable', 'in:cutting,marking,skiving,upper_making'],
             'defects' => ['array'],
             'defects.*' => ['nullable', 'boolean'],
         ]);
@@ -99,9 +101,14 @@ class DashboardController extends Controller
             $defect->update(['confirmed' => $confirmedStates->get($defect->id, false)]);
         }
 
+        $isRework = $validated['action'] === 'rework';
+        $reworkStation = $isRework ? $validated['rework_station'] : null;
+
         $inspection->update([
             'inspector_id' => $request->user()->id,
             'action' => $validated['action'],
+            'rework_station' => $reworkStation,
+            'rework_status' => $isRework ? 'not_started' : null,
             'ai_override' => $aiOverride,
             'inspected_at' => now(),
             'reworked_at' => null,
@@ -111,16 +118,13 @@ class DashboardController extends Controller
         AuditLog::record($previousAction ? 'inspection.revalidated' : 'inspection.validated', $request->user(), [
             'inspection_id' => $inspection->id,
             'action' => $validated['action'],
+            'rework_station' => $reworkStation,
             'previous_action' => $previousAction,
             'ai_override' => $aiOverride,
         ]);
 
         if ($validated['action'] === 'rework') {
-            $shift = $inspection->batch?->shift;
-
-            $constructors = User::where('role', 'shoe_constructor')
-                ->when($shift, fn ($query) => $query->where('shift', $shift))
-                ->get();
+            $constructors = User::where('role', 'shoe_constructor')->get();
 
             Notification::send($constructors, new InspectionMarkedForRework($inspection));
         }
@@ -159,23 +163,24 @@ class DashboardController extends Controller
         $overriddenCount = Inspection::where('ai_override', true)->count();
         $overrideRate = $reviewedCount > 0 ? round(($overriddenCount / $reviewedCount) * 100, 1) : 0;
 
-        // Batch pass/fail/rework rates
+        // Batch pass/fail/rework rates, plus expected vs. produced piece counts
         $batchStats = Batch::with('inspections')->latest()->limit(10)->get()->map(function (Batch $batch) {
-            $total  = $batch->inspections->whereNotNull('action')->count();
-            $pass   = $batch->inspections->where('action', 'pass')->count();
-            $rework = $batch->inspections->where('action', 'rework')->count();
-            $reject = $batch->inspections->where('action', 'reject')->count();
+            $produced = $batch->inspections->count();
+            $total    = $batch->inspections->whereNotNull('action')->count();
+            $pass     = $batch->inspections->where('action', 'pass')->count();
+            $rework   = $batch->inspections->where('action', 'rework')->count();
+            $reject   = $batch->inspections->where('action', 'reject')->count();
 
             return [
-                'id'         => $batch->id,
-                'batch_code' => $batch->batch_code,
-                'shift'      => $batch->shift,
-                'stage'      => $batch->manufacturing_stage,
-                'total'      => $total,
-                'pass'       => $pass,
-                'rework'     => $rework,
-                'reject'     => $reject,
-                'pass_rate'  => $total > 0 ? round(($pass / $total) * 100, 1) : null,
+                'id'              => $batch->id,
+                'batch_code'      => $batch->batch_code,
+                'stage'           => $batch->manufacturing_stage,
+                'expected_pieces' => $batch->expected_pieces,
+                'produced'        => $produced,
+                'pass'            => $pass,
+                'rework'          => $rework,
+                'reject'          => $reject,
+                'pass_rate'       => $total > 0 ? round(($pass / $total) * 100, 1) : null,
             ];
         });
 
@@ -183,10 +188,15 @@ class DashboardController extends Controller
         $selectedTrendBatchId = $request->integer('trend_batch_id') ?: null;
         $trendMode = $selectedTrendBatchId ? 'batch' : 'overall';
 
+        $hourExpression = fn (string $column) => match (DB::getDriverName()) {
+            'sqlite' => "CAST(strftime('%H', {$column}) AS INTEGER)",
+            default => "HOUR({$column})",
+        };
+
         $hourlyDefects = Defect::query()
             ->join('inspections', 'defects.inspection_id', '=', 'inspections.id')
             ->when($selectedTrendBatchId, fn ($query) => $query->where('inspections.batch_id', $selectedTrendBatchId))
-            ->selectRaw('HOUR(defects.created_at) as hour, count(*) as total')
+            ->selectRaw($hourExpression('defects.created_at')." as hour, count(*) as total")
             ->groupBy('hour')
             ->pluck('total', 'hour');
 
@@ -205,7 +215,7 @@ class DashboardController extends Controller
             $threshold = max(2, $average * 1.5);
 
             $hourlyByType = Defect::query()
-                ->selectRaw('HOUR(created_at) as hour, defect_type, count(*) as total')
+                ->selectRaw($hourExpression('created_at')." as hour, defect_type, count(*) as total")
                 ->groupBy('hour', 'defect_type')
                 ->get()
                 ->groupBy('hour');
@@ -226,22 +236,6 @@ class DashboardController extends Controller
 
             $spikeHours = $hourlySpikes->pluck('hour');
         }
-
-        // Shift comparison — AM vs PM pass rate
-        $shiftStats = Inspection::query()
-            ->whereNotNull('action')
-            ->join('batches', 'inspections.batch_id', '=', 'batches.id')
-            ->whereNotNull('batches.shift')
-            ->selectRaw('batches.shift, count(*) as total, sum(case when inspections.action = "pass" then 1 else 0 end) as pass_count')
-            ->groupBy('batches.shift')
-            ->get()
-            ->mapWithKeys(fn ($row) => [
-                strtoupper($row->shift) => [
-                    'total'     => $row->total,
-                    'pass'      => $row->pass_count,
-                    'pass_rate' => $row->total > 0 ? round(($row->pass_count / $row->total) * 100, 1) : null,
-                ],
-            ]);
 
         // Checkpoint comparison — preparation vs finishing
         $checkpointStats = Inspection::query()
@@ -293,7 +287,6 @@ class DashboardController extends Controller
             'trendValues',
             'hourlySpikes',
             'spikeHours',
-            'shiftStats',
             'checkpointStats',
             'inspectorStats',
             'topInsight',
@@ -385,12 +378,9 @@ class DashboardController extends Controller
 
     public function constructor(Request $request): View
     {
-        $shift = $request->user()->shift;
-
         $reworkInspections = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
             ->whereNull('reworked_at')
-            ->when($shift, fn ($query) => $query->whereHas('batch', fn ($q) => $q->where('shift', $shift)))
             ->latest()
             ->limit(10)
             ->get();
@@ -398,7 +388,6 @@ class DashboardController extends Controller
         $resolvedReworks = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
             ->whereNotNull('reworked_at')
-            ->when($shift, fn ($query) => $query->whereHas('batch', fn ($q) => $q->where('shift', $shift)))
             ->latest('reworked_at')
             ->limit(10)
             ->get();
@@ -413,18 +402,26 @@ class DashboardController extends Controller
         return view('dashboards.constructor-inspection', compact('inspection'));
     }
 
-    public function resolveRework(Request $request, Inspection $inspection): RedirectResponse
+    public function updateReworkStatus(Request $request, Inspection $inspection): RedirectResponse
     {
-        $inspection->update([
-            'reworked_at' => now(),
-            'resolved_by' => $request->user()->id,
+        $validated = $request->validate([
+            'rework_status' => ['required', 'in:not_started,in_progress,completed'],
         ]);
 
-        AuditLog::record('inspection.reworked', $request->user(), [
+        $completed = $validated['rework_status'] === 'completed';
+
+        $inspection->update([
+            'rework_status' => $validated['rework_status'],
+            'reworked_at' => $completed ? now() : null,
+            'resolved_by' => $completed ? $request->user()->id : null,
+        ]);
+
+        AuditLog::record($completed ? 'inspection.reworked' : 'inspection.rework_status_updated', $request->user(), [
             'inspection_id' => $inspection->id,
+            'rework_status' => $validated['rework_status'],
         ]);
 
         return redirect()->route('dashboard.constructor')
-            ->with('status', "Inspection #{$inspection->id} marked as resolved.");
+            ->with('status', "Inspection #{$inspection->id} marked as ".str_replace('_', ' ', $validated['rework_status']).'.');
     }
 }

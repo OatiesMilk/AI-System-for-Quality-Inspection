@@ -25,6 +25,7 @@ class ConstructorDashboardTest extends TestCase
             'batch_id' => $batch->id,
             'checkpoint' => 'finishing',
             'action' => 'rework',
+            'rework_status' => 'not_started',
             'inspected_at' => now(),
         ], $overrides));
     }
@@ -76,50 +77,99 @@ class ConstructorDashboardTest extends TestCase
         $response->assertSee('74.0%');
     }
 
-    public function test_constructor_with_a_shift_only_sees_reworks_from_their_own_shift(): void
+    public function test_constructor_dashboard_shows_the_responsible_station(): void
     {
-        $amConstructor = User::factory()->create(['role' => 'shoe_constructor', 'shift' => 'am']);
+        $constructor = User::factory()->create(['role' => 'shoe_constructor']);
+        $inspection = $this->makeReworkInspection(['rework_station' => 'upper_making']);
 
-        $amRework = $this->makeReworkInspection(batchOverrides: ['shift' => 'am']);
-        $pmRework = $this->makeReworkInspection(batchOverrides: ['shift' => 'pm']);
-
-        $response = $this->actingAs($amConstructor)->get('/constructor');
+        $response = $this->actingAs($constructor)->get('/constructor');
 
         $response->assertOk();
-        $response->assertSee($amRework->batch->batch_code);
-        $response->assertDontSee($pmRework->batch->batch_code);
+        $response->assertSee('upper making');
     }
 
-    public function test_constructor_without_a_shift_sees_all_reworks(): void
+    public function test_constructor_sees_all_reworks(): void
     {
-        $unassignedConstructor = User::factory()->create(['role' => 'shoe_constructor', 'shift' => null]);
+        $constructor = User::factory()->create(['role' => 'shoe_constructor']);
 
-        $amRework = $this->makeReworkInspection(batchOverrides: ['shift' => 'am']);
-        $pmRework = $this->makeReworkInspection(batchOverrides: ['shift' => 'pm']);
+        $firstRework = $this->makeReworkInspection();
+        $secondRework = $this->makeReworkInspection();
 
-        $response = $this->actingAs($unassignedConstructor)->get('/constructor');
+        $response = $this->actingAs($constructor)->get('/constructor');
 
         $response->assertOk();
-        $response->assertSee($amRework->batch->batch_code);
-        $response->assertSee($pmRework->batch->batch_code);
+        $response->assertSee($firstRework->batch->batch_code);
+        $response->assertSee($secondRework->batch->batch_code);
     }
 
-    public function test_constructor_can_mark_a_rework_as_resolved(): void
+    public function test_constructor_can_start_progress_on_a_rework(): void
     {
         $constructor = User::factory()->create(['role' => 'shoe_constructor']);
         $inspection = $this->makeReworkInspection();
 
         $response = $this->actingAs($constructor)
-            ->patch("/constructor/inspections/{$inspection->id}/resolve");
+            ->patch("/constructor/inspections/{$inspection->id}/status", [
+                'rework_status' => 'in_progress',
+            ]);
 
         $response->assertRedirect(route('dashboard.constructor'));
 
         $inspection->refresh();
+        $this->assertSame('in_progress', $inspection->rework_status);
+        $this->assertNull($inspection->reworked_at);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'inspection.rework_status_updated',
+            'user_id' => $constructor->id,
+        ]);
+    }
+
+    public function test_constructor_can_mark_a_rework_as_completed(): void
+    {
+        $constructor = User::factory()->create(['role' => 'shoe_constructor']);
+        $inspection = $this->makeReworkInspection(['rework_status' => 'in_progress']);
+
+        $response = $this->actingAs($constructor)
+            ->patch("/constructor/inspections/{$inspection->id}/status", [
+                'rework_status' => 'completed',
+            ]);
+
+        $response->assertRedirect(route('dashboard.constructor'));
+
+        $inspection->refresh();
+        $this->assertSame('completed', $inspection->rework_status);
         $this->assertNotNull($inspection->reworked_at);
+        $this->assertSame($constructor->id, $inspection->resolved_by);
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'inspection.reworked',
             'user_id' => $constructor->id,
         ]);
+    }
+
+    public function test_constructor_can_revert_a_rework_mistakenly_marked_completed(): void
+    {
+        $constructor = User::factory()->create(['role' => 'shoe_constructor']);
+        $inspection = $this->makeReworkInspection([
+            'rework_status' => 'completed',
+            'reworked_at' => now(),
+            'resolved_by' => $constructor->id,
+        ]);
+
+        $response = $this->actingAs($constructor)
+            ->patch("/constructor/inspections/{$inspection->id}/status", [
+                'rework_status' => 'in_progress',
+            ]);
+
+        $response->assertRedirect(route('dashboard.constructor'));
+
+        $inspection->refresh();
+        $this->assertSame('in_progress', $inspection->rework_status);
+        $this->assertNull($inspection->reworked_at);
+        $this->assertNull($inspection->resolved_by);
+
+        // Reverted items move back out of "Past Reworks" into the active list.
+        $dashboard = $this->actingAs($constructor)->get('/constructor');
+        $dashboard->assertSeeInOrder(['Rework Notifications', $inspection->batch->batch_code]);
     }
 }

@@ -127,7 +127,7 @@ class ManagerDashboardTest extends TestCase
         $response = $this->actingAs($manager)->post('/manager/batches', [
             'batch_code' => 'BATCH-1-20260701',
             'production_date' => '2026-07-01',
-            'shift' => 'am',
+            'expected_pieces' => 40,
             'manufacturing_stage' => 'finishing',
         ]);
 
@@ -135,7 +135,7 @@ class ManagerDashboardTest extends TestCase
 
         $this->assertDatabaseHas('batches', [
             'batch_code' => 'BATCH-1-20260701',
-            'shift' => 'am',
+            'expected_pieces' => 40,
             'manufacturing_stage' => 'finishing',
             'created_by' => $manager->id,
         ]);
@@ -153,31 +153,31 @@ class ManagerDashboardTest extends TestCase
         Batch::create([
             'batch_code' => 'DUPLICATE-001',
             'production_date' => now(),
-            'shift' => 'am',
+            'expected_pieces' => 40,
             'manufacturing_stage' => 'finishing',
         ]);
 
         $response = $this->actingAs($manager)->post('/manager/batches', [
             'batch_code' => 'DUPLICATE-001',
             'production_date' => now()->toDateString(),
-            'shift' => 'pm',
+            'expected_pieces' => 40,
             'manufacturing_stage' => 'finishing',
         ]);
 
         $response->assertSessionHasErrors('batch_code');
     }
 
-    public function test_batch_requires_a_valid_shift(): void
+    public function test_batch_requires_expected_pieces(): void
     {
         $manager = User::factory()->create(['role' => 'product_manager']);
 
         $response = $this->actingAs($manager)->post('/manager/batches', [
             'batch_code' => 'BATCH-INVALID',
             'production_date' => now()->toDateString(),
-            'shift' => 'midnight',
+            'expected_pieces' => 0,
             'manufacturing_stage' => 'finishing',
         ]);
 
-        $response->assertSessionHasErrors('shift');
+        $response->assertSessionHasErrors('expected_pieces');
     }
 }

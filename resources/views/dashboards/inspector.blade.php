@@ -91,6 +91,8 @@
                                     <th class="px-6 py-3">Batch</th>
                                     <th class="px-6 py-3">Checkpoint</th>
                                     <th class="px-6 py-3">Decision</th>
+                                    <th class="px-6 py-3">Station</th>
+                                    <th class="px-6 py-3">Rework Status</th>
                                     <th class="px-6 py-3">AI Override</th>
                                     <th class="px-6 py-3">Inspector</th>
                                     <th class="px-6 py-3">Reviewed</th>
@@ -111,6 +113,14 @@
                                             ])>
                                                 {{ $inspection->action }}
                                             </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @if ($inspection->action === 'rework')
+                                                @include('dashboards.partials.rework-status-badge', ['status' => $inspection->rework_status])
+                                            @else
+                                                <span class="text-gray-400">—</span>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->ai_override ? 'Yes' : 'No' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->inspector?->name ?? '-' }}</td>

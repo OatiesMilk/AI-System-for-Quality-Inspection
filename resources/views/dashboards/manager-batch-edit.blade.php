@@ -26,16 +26,12 @@
                         <x-input-error :messages="$errors->get('production_date')" class="mt-2" />
                     </div>
 
-                    <!-- Shift -->
+                    <!-- Expected Pieces -->
                     <div class="mt-4">
-                        <x-input-label for="shift" :value="__('Shift')" />
-                        <select id="shift" name="shift" required
-                            class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                            <option value="" disabled {{ old('shift', $batch->shift) ? '' : 'selected' }}>{{ __('Select a shift') }}</option>
-                            <option value="am" {{ old('shift', $batch->shift) === 'am' ? 'selected' : '' }}>{{ __('AM (Batch 1)') }}</option>
-                            <option value="pm" {{ old('shift', $batch->shift) === 'pm' ? 'selected' : '' }}>{{ __('PM (Batch 2)') }}</option>
-                        </select>
-                        <x-input-error :messages="$errors->get('shift')" class="mt-2" />
+                        <x-input-label for="expected_pieces" :value="__('Expected Leather Pieces')" />
+                        <x-text-input id="expected_pieces" class="block mt-1 w-full" type="number" min="1" name="expected_pieces" :value="old('expected_pieces', $batch->expected_pieces)" required placeholder="e.g. 50" />
+                        <p class="text-xs text-gray-500 mt-1">{{ __('Target number of leather pieces for this batch.') }}</p>
+                        <x-input-error :messages="$errors->get('expected_pieces')" class="mt-2" />
                     </div>
 
                     <!-- Manufacturing Stage -->

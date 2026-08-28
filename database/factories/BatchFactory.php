@@ -17,13 +17,10 @@ class BatchFactory extends Factory
      */
     public function definition(): array
     {
-        $shift = fake()->randomElement(['am', 'pm']);
-        $batchNumber = $shift === 'am' ? 1 : 2;
-
         return [
-            'batch_code' => 'BATCH-'.$batchNumber.'-'.fake()->unique()->numerify('########'),
+            'batch_code' => 'BATCH-'.fake()->unique()->numerify('########'),
             'production_date' => fake()->dateTimeBetween('-2 weeks', 'now'),
-            'shift' => $shift,
+            'expected_pieces' => fake()->numberBetween(20, 60),
             'manufacturing_stage' => fake()->randomElement(['preparation', 'finishing']),
         ];
     }

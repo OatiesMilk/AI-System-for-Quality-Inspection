@@ -195,9 +195,9 @@
                             <thead>
                                 <tr class="text-left text-xs font-medium text-gray-500 uppercase">
                                     <th class="py-2 pr-4">Batch</th>
-                                    <th class="py-2 pr-4">Shift</th>
                                     <th class="py-2 pr-4">Stage</th>
-                                    <th class="py-2 pr-4">Total</th>
+                                    <th class="py-2 pr-4">Expected</th>
+                                    <th class="py-2 pr-4">Produced</th>
                                     <th class="py-2 pr-4">Pass</th>
                                     <th class="py-2 pr-4">Rework</th>
                                     <th class="py-2 pr-4">Reject</th>
@@ -209,9 +209,9 @@
                                 @foreach ($batchStats as $batch)
                                     <tr>
                                         <td class="py-2 pr-4 font-medium text-gray-900">{{ $batch['batch_code'] }}</td>
-                                        <td class="py-2 pr-4 uppercase">{{ $batch['shift'] ?? '—' }}</td>
                                         <td class="py-2 pr-4 capitalize">{{ str_replace('_', ' ', $batch['stage']) }}</td>
-                                        <td class="py-2 pr-4">{{ $batch['total'] }}</td>
+                                        <td class="py-2 pr-4">{{ $batch['expected_pieces'] ?? '—' }}</td>
+                                        <td class="py-2 pr-4">{{ $batch['produced'] }}</td>
                                         <td class="py-2 pr-4 text-green-600">{{ $batch['pass'] }}</td>
                                         <td class="py-2 pr-4 text-yellow-600">{{ $batch['rework'] }}</td>
                                         <td class="py-2 pr-4 text-red-600">{{ $batch['reject'] }}</td>
@@ -235,57 +235,30 @@
                 @endif
             </div>
 
-            {{-- Shift & Checkpoint Comparison --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Shift Comparison</h3>
-                    @if ($shiftStats->isEmpty())
-                        <p class="text-gray-500 text-sm">No shift data available.</p>
-                    @else
-                        <ul class="space-y-3">
-                            @foreach ($shiftStats as $shift => $stats)
-                                <li class="border rounded-lg p-4">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-semibold text-gray-800">{{ $shift }} Shift</span>
-                                        <span class="text-sm font-medium @if(($stats['pass_rate'] ?? 0) >= 90) text-green-600 @elseif(($stats['pass_rate'] ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
-                                            {{ $stats['pass_rate'] ?? '—' }}% pass
-                                        </span>
-                                    </div>
-                                    <div class="w-full bg-gray-100 rounded-full h-2">
-                                        <div class="h-2 rounded-full @if(($stats['pass_rate'] ?? 0) >= 90) bg-green-500 @elseif(($stats['pass_rate'] ?? 0) >= 75) bg-yellow-500 @else bg-red-500 @endif"
-                                            style="width: {{ $stats['pass_rate'] ?? 0 }}%"></div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-1">{{ $stats['total'] }} inspections</div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Checkpoint Comparison</h3>
-                    @if ($checkpointStats->isEmpty())
-                        <p class="text-gray-500 text-sm">No checkpoint data available.</p>
-                    @else
-                        <ul class="space-y-3">
-                            @foreach ($checkpointStats as $checkpoint => $stats)
-                                <li class="border rounded-lg p-4">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-semibold text-gray-800 capitalize">{{ str_replace('_', ' ', $checkpoint) }}</span>
-                                        <span class="text-sm font-medium @if(($stats['pass_rate'] ?? 0) >= 90) text-green-600 @elseif(($stats['pass_rate'] ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
-                                            {{ $stats['pass_rate'] ?? '—' }}% pass
-                                        </span>
-                                    </div>
-                                    <div class="w-full bg-gray-100 rounded-full h-2">
-                                        <div class="h-2 rounded-full @if(($stats['pass_rate'] ?? 0) >= 90) bg-green-500 @elseif(($stats['pass_rate'] ?? 0) >= 75) bg-yellow-500 @else bg-red-500 @endif"
-                                            style="width: {{ $stats['pass_rate'] ?? 0 }}%"></div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-1">{{ $stats['total'] }} inspections</div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
+            {{-- Checkpoint Comparison --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Checkpoint Comparison</h3>
+                @if ($checkpointStats->isEmpty())
+                    <p class="text-gray-500 text-sm">No checkpoint data available.</p>
+                @else
+                    <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach ($checkpointStats as $checkpoint => $stats)
+                            <li class="border rounded-lg p-4">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-semibold text-gray-800 capitalize">{{ str_replace('_', ' ', $checkpoint) }}</span>
+                                    <span class="text-sm font-medium @if(($stats['pass_rate'] ?? 0) >= 90) text-green-600 @elseif(($stats['pass_rate'] ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
+                                        {{ $stats['pass_rate'] ?? '—' }}% pass
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="h-2 rounded-full @if(($stats['pass_rate'] ?? 0) >= 90) bg-green-500 @elseif(($stats['pass_rate'] ?? 0) >= 75) bg-yellow-500 @else bg-red-500 @endif"
+                                        style="width: {{ $stats['pass_rate'] ?? 0 }}%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">{{ $stats['total'] }} inspections</div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
 
             {{-- Inspector Performance --}}

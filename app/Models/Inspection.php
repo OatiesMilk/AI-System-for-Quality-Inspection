@@ -19,6 +19,8 @@ class Inspection extends Model
         'image_data',
         'image_mime',
         'action',
+        'rework_station',
+        'rework_status',
         'ai_override',
         'inspected_at',
         'reworked_at',

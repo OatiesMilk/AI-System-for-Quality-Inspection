@@ -27,21 +27,20 @@ class DemoDataSeeder extends Seeder
         }
 
         $batchPlans = [
-            ['shift' => 'am', 'stage' => 'finishing', 'days_ago' => 0],
-            ['shift' => 'pm', 'stage' => 'finishing', 'days_ago' => 0],
-            ['shift' => 'am', 'stage' => 'finishing', 'days_ago' => 1],
-            ['shift' => 'pm', 'stage' => 'preparation', 'days_ago' => 1],
-            ['shift' => 'am', 'stage' => 'preparation', 'days_ago' => 2],
+            ['expected_pieces' => 40, 'stage' => 'finishing', 'days_ago' => 0],
+            ['expected_pieces' => 35, 'stage' => 'finishing', 'days_ago' => 0],
+            ['expected_pieces' => 50, 'stage' => 'finishing', 'days_ago' => 1],
+            ['expected_pieces' => 30, 'stage' => 'preparation', 'days_ago' => 1],
+            ['expected_pieces' => 45, 'stage' => 'preparation', 'days_ago' => 2],
         ];
 
         foreach ($batchPlans as $index => $plan) {
-            $batchNumber = $plan['shift'] === 'am' ? 1 : 2;
             $date = now()->subDays($plan['days_ago']);
 
             $batch = Batch::create([
-                'batch_code' => 'BATCH-'.$batchNumber.'-'.$date->format('Ymd').'-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
+                'batch_code' => 'BATCH-'.$date->format('Ymd').'-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
                 'production_date' => $date,
-                'shift' => $plan['shift'],
+                'expected_pieces' => $plan['expected_pieces'],
                 'manufacturing_stage' => $plan['stage'],
                 'created_by' => $manager->id,
             ]);
@@ -49,7 +48,7 @@ class DemoDataSeeder extends Seeder
             AuditLog::record('batch.created', $manager, [
                 'batch_id' => $batch->id,
                 'batch_code' => $batch->batch_code,
-                'shift' => $batch->shift,
+                'expected_pieces' => $batch->expected_pieces,
             ]);
 
             // One inspection still awaiting HITL validation.
@@ -71,23 +70,30 @@ class DemoDataSeeder extends Seeder
                 'ai_override' => false,
             ]);
 
-            // One inspection flagged for rework - alternate resolved/unresolved.
+            // One inspection flagged for rework - alternate through each progress state.
+            $stations = ['cutting', 'marking', 'skiving', 'upper_making'];
+            $constructor = User::where('email', 'constructor@cpoint.test')->first();
+            $isResolved = $index % 2 === 0;
+            $reworkStatus = $isResolved ? 'completed' : ($index % 4 === 1 ? 'in_progress' : 'not_started');
+
             $rework = Inspection::factory()->for($batch)->reviewed('rework')->create([
                 'checkpoint' => $plan['stage'],
                 'inspector_id' => $inspector->id,
-                'reworked_at' => $index % 2 === 0 ? now()->subHours(3) : null,
+                'rework_station' => $stations[$index % count($stations)],
+                'rework_status' => $reworkStatus,
+                'reworked_at' => $isResolved ? now()->subHours(3) : null,
+                'resolved_by' => $isResolved ? $constructor?->id : null,
             ]);
             Defect::factory()->for($rework)->create(['confirmed' => true]);
 
             AuditLog::record('inspection.validated', $inspector, [
                 'inspection_id' => $rework->id,
                 'action' => 'rework',
+                'rework_station' => $rework->rework_station,
                 'ai_override' => false,
             ]);
 
             if ($rework->reworked_at) {
-                $constructor = User::where('email', 'constructor@cpoint.test')->first();
-
                 AuditLog::record('inspection.reworked', $constructor, [
                     'inspection_id' => $rework->id,
                 ]);

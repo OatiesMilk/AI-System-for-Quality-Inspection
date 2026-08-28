@@ -37,7 +37,6 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role' => ['required', 'string', 'in:'.implode(',', self::ASSIGNABLE_ROLES)],
-            'shift' => ['nullable', 'in:am,pm'],
             'password' => ['nullable', 'confirmed', 'min:8'],
         ]);
 
@@ -45,7 +44,6 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'shift' => $validated['role'] === 'shoe_constructor' ? ($validated['shift'] ?? null) : null,
         ]);
 
         if (! empty($validated['password'])) {
