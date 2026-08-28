@@ -139,7 +139,7 @@ The YOLO detection pipeline posts inspection results into the system via a machi
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `batch_id` | int | yes | Must reference an existing batch |
-| `checkpoint` | string | yes | `preparation` or `finishing` |
+| `checkpoint` | string | yes | `preparation` or `pre_assembly` |
 | `image` | file | yes | The captured inspection photo, max 10MB |
 | `defects[n][defect_type]` | string | no | One of: `scratch`, `cut`, `hole`, `crease`, `glue`, `stitch` |
 | `defects[n][confidence_score]` | float | no | YOLO confidence, 0–1 |

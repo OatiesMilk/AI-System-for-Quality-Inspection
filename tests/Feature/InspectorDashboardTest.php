@@ -19,12 +19,12 @@ class InspectorDashboardTest extends TestCase
         $batch = Batch::create([
             'batch_code' => 'TEST-'.fake()->unique()->numerify('###'),
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         return Inspection::create(array_merge([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image_path' => null,
         ], $inspectionOverrides));
     }

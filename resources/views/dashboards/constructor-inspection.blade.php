@@ -15,7 +15,7 @@
                     </div>
                     <div>
                         <dt class="text-gray-500">Checkpoint</dt>
-                        <dd class="font-medium capitalize">{{ $inspection->checkpoint }}</dd>
+                        <dd class="font-medium capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</dd>
                     </div>
                     <div>
                         <dt class="text-gray-500">Station</dt>

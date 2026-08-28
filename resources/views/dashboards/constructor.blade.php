@@ -25,7 +25,7 @@
                             <div class="border border-gray-200 rounded-lg p-4 space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
-                                    <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
+                                    <span class="text-xs text-gray-500 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
                                 </div>
                                 <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
                                 @if ($inspection->rework_station)
@@ -65,7 +65,7 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
                                             {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
@@ -97,7 +97,7 @@
                             <div class="border border-gray-200 rounded-lg p-4 space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
-                                    <span class="text-xs text-gray-500 capitalize">{{ $inspection->checkpoint }}</span>
+                                    <span class="text-xs text-gray-500 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
                                 </div>
                                 <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
                                 @if ($inspection->rework_station)
@@ -142,7 +142,7 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->checkpoint }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-600 capitalize">
                                             {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}

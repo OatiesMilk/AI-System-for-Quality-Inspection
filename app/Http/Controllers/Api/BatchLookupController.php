@@ -19,7 +19,7 @@ class BatchLookupController extends Controller
     public function latest(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'checkpoint' => ['required', 'in:preparation,finishing'],
+            'checkpoint' => ['required', 'in:preparation,pre_assembly'],
         ]);
 
         $batch = Batch::query()

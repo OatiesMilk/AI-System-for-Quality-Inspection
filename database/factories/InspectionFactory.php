@@ -20,7 +20,7 @@ class InspectionFactory extends Factory
     {
         return [
             'batch_id' => Batch::factory(),
-            'checkpoint' => fake()->randomElement(['preparation', 'finishing']),
+            'checkpoint' => fake()->randomElement(['preparation', 'pre_assembly']),
             'image_path' => null,
             'action' => null,
             'ai_override' => false,

@@ -29,12 +29,12 @@ class ManagerDashboardTest extends TestCase
         $batch = Batch::create([
             'batch_code' => 'MGR-001',
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $inspection = Inspection::create([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
         ]);
 
         Defect::create([
@@ -58,12 +58,12 @@ class ManagerDashboardTest extends TestCase
         $batch = Batch::create([
             'batch_code' => 'MGR-OVERRIDE',
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $overridden = Inspection::create([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'action' => 'pass',
             'ai_override' => true,
             'inspector_id' => $inspector->id,
@@ -79,7 +79,7 @@ class ManagerDashboardTest extends TestCase
 
         $clean = Inspection::create([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'action' => 'pass',
             'ai_override' => false,
             'inspector_id' => $inspector->id,
@@ -128,7 +128,7 @@ class ManagerDashboardTest extends TestCase
             'batch_code' => 'BATCH-1-20260701',
             'production_date' => '2026-07-01',
             'expected_pieces' => 40,
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $response->assertRedirect(route('dashboard.manager'));
@@ -136,7 +136,7 @@ class ManagerDashboardTest extends TestCase
         $this->assertDatabaseHas('batches', [
             'batch_code' => 'BATCH-1-20260701',
             'expected_pieces' => 40,
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
             'created_by' => $manager->id,
         ]);
 
@@ -154,14 +154,14 @@ class ManagerDashboardTest extends TestCase
             'batch_code' => 'DUPLICATE-001',
             'production_date' => now(),
             'expected_pieces' => 40,
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $response = $this->actingAs($manager)->post('/manager/batches', [
             'batch_code' => 'DUPLICATE-001',
             'production_date' => now()->toDateString(),
             'expected_pieces' => 40,
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $response->assertSessionHasErrors('batch_code');
@@ -175,7 +175,7 @@ class ManagerDashboardTest extends TestCase
             'batch_code' => 'BATCH-INVALID',
             'production_date' => now()->toDateString(),
             'expected_pieces' => 0,
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         $response->assertSessionHasErrors('expected_pieces');

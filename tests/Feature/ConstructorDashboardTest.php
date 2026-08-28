@@ -18,12 +18,12 @@ class ConstructorDashboardTest extends TestCase
         $batch = Batch::create(array_merge([
             'batch_code' => 'CTOR-'.fake()->unique()->numerify('###'),
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ], $batchOverrides));
 
         return Inspection::create(array_merge([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'action' => 'rework',
             'rework_status' => 'not_started',
             'inspected_at' => now(),

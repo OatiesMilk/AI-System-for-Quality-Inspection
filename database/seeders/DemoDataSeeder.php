@@ -27,9 +27,9 @@ class DemoDataSeeder extends Seeder
         }
 
         $batchPlans = [
-            ['expected_pieces' => 40, 'stage' => 'finishing', 'days_ago' => 0],
-            ['expected_pieces' => 35, 'stage' => 'finishing', 'days_ago' => 0],
-            ['expected_pieces' => 50, 'stage' => 'finishing', 'days_ago' => 1],
+            ['expected_pieces' => 40, 'stage' => 'pre_assembly', 'days_ago' => 0],
+            ['expected_pieces' => 35, 'stage' => 'pre_assembly', 'days_ago' => 0],
+            ['expected_pieces' => 50, 'stage' => 'pre_assembly', 'days_ago' => 1],
             ['expected_pieces' => 30, 'stage' => 'preparation', 'days_ago' => 1],
             ['expected_pieces' => 45, 'stage' => 'preparation', 'days_ago' => 2],
         ];

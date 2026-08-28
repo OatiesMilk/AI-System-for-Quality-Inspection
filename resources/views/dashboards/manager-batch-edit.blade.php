@@ -41,7 +41,7 @@
                             class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                             <option value="" disabled {{ old('manufacturing_stage', $batch->manufacturing_stage) ? '' : 'selected' }}>{{ __('Select a stage') }}</option>
                             <option value="preparation" {{ old('manufacturing_stage', $batch->manufacturing_stage) === 'preparation' ? 'selected' : '' }}>{{ __('Preparation') }}</option>
-                            <option value="finishing" {{ old('manufacturing_stage', $batch->manufacturing_stage) === 'finishing' ? 'selected' : '' }}>{{ __('Finishing') }}</option>
+                            <option value="pre_assembly" {{ old('manufacturing_stage', $batch->manufacturing_stage) === 'pre_assembly' ? 'selected' : '' }}>{{ __('Pre-Assembly') }}</option>
                         </select>
                         <x-input-error :messages="$errors->get('manufacturing_stage')" class="mt-2" />
                     </div>

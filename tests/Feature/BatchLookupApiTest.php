@@ -50,7 +50,7 @@ class BatchLookupApiTest extends TestCase
         $service = User::factory()->create(['role' => 'system_admin']);
         Sanctum::actingAs($service, ['inspections:create']);
 
-        $response = $this->getJson('/api/batches/latest?checkpoint=finishing');
+        $response = $this->getJson('/api/batches/latest?checkpoint=pre_assembly');
 
         $response->assertNotFound();
     }

@@ -18,7 +18,7 @@ class InspectionIngestApiTest extends TestCase
         return Batch::create([
             'batch_code' => 'API-'.fake()->unique()->numerify('###'),
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
     }
 
@@ -44,7 +44,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
         ]);
 
         $response->assertUnauthorized();
@@ -59,7 +59,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
         ]);
 
         $response->assertForbidden();
@@ -75,7 +75,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image' => $image,
             'defects' => [
                 [
@@ -96,7 +96,7 @@ class InspectionIngestApiTest extends TestCase
 
         $this->assertDatabaseHas('inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'action' => null,
         ]);
 
@@ -125,7 +125,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => 999999,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image' => UploadedFile::fake()->create('inspection.jpg', 50, 'image/jpeg'),
         ]);
 
@@ -142,7 +142,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image' => UploadedFile::fake()->create('inspection.jpg', 50, 'image/jpeg'),
             'defects' => [
                 ['defect_type' => 'not-a-real-defect', 'confidence_score' => 0.5],
@@ -162,7 +162,7 @@ class InspectionIngestApiTest extends TestCase
 
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image' => UploadedFile::fake()->create('inspection.jpg', 50, 'image/jpeg'),
             'defects' => [
                 ['defect_type' => 'scratch', 'confidence_score' => 1.5],

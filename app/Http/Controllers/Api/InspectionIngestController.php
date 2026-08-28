@@ -17,7 +17,7 @@ class InspectionIngestController extends Controller
      *
      * Expects a multipart/form-data request:
      * - batch_id: int, required, must reference an existing batch
-     * - checkpoint: string, required, "preparation" or "finishing"
+     * - checkpoint: string, required, "preparation" or "pre_assembly"
      * - image: file, required, the captured inspection photo
      * - defects: array, optional, each item:
      *     - defect_type: string, one of the known defect enum values
@@ -28,7 +28,7 @@ class InspectionIngestController extends Controller
     {
         $validated = $request->validate([
             'batch_id' => ['required', 'integer', 'exists:batches,id'],
-            'checkpoint' => ['required', 'in:preparation,finishing'],
+            'checkpoint' => ['required', 'in:preparation,pre_assembly'],
             'image' => ['required', 'image', 'max:10240'],
             'defects' => ['array'],
             'defects.*.defect_type' => ['required_with:defects', 'in:scratch,cut,hole,crease,glue,stitch'],

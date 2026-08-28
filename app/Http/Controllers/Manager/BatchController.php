@@ -22,7 +22,7 @@ class BatchController extends Controller
             'batch_code' => ['required', 'string', 'max:255', 'unique:batches,batch_code'],
             'production_date' => ['required', 'date'],
             'expected_pieces' => ['required', 'integer', 'min:1'],
-            'manufacturing_stage' => ['required', 'in:preparation,finishing'],
+            'manufacturing_stage' => ['required', 'in:preparation,pre_assembly'],
         ]);
 
         $batch = Batch::create([
@@ -51,7 +51,7 @@ class BatchController extends Controller
             'batch_code' => ['required', 'string', 'max:255', 'unique:batches,batch_code,'.$batch->id],
             'production_date' => ['required', 'date'],
             'expected_pieces' => ['required', 'integer', 'min:1'],
-            'manufacturing_stage' => ['required', 'in:preparation,finishing'],
+            'manufacturing_stage' => ['required', 'in:preparation,pre_assembly'],
         ]);
 
         $batch->update($validated);

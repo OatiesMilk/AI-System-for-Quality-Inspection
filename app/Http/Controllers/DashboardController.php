@@ -237,7 +237,7 @@ class DashboardController extends Controller
             $spikeHours = $hourlySpikes->pluck('hour');
         }
 
-        // Checkpoint comparison — preparation vs finishing
+        // Checkpoint comparison — preparation vs pre-assembly
         $checkpointStats = Inspection::query()
             ->whereNotNull('action')
             ->selectRaw('checkpoint, count(*) as total, sum(case when action = "pass" then 1 else 0 end) as pass_count')

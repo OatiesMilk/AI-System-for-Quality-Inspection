@@ -17,12 +17,12 @@ class InspectionImageTest extends TestCase
         $batch = Batch::create([
             'batch_code' => 'IMG-'.fake()->unique()->numerify('###'),
             'production_date' => now(),
-            'manufacturing_stage' => 'finishing',
+            'manufacturing_stage' => 'pre_assembly',
         ]);
 
         return Inspection::create([
             'batch_id' => $batch->id,
-            'checkpoint' => 'finishing',
+            'checkpoint' => 'pre_assembly',
             'image_data' => $imageData,
             'image_mime' => 'image/jpeg',
         ]);
