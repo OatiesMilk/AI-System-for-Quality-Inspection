@@ -5,6 +5,8 @@
         </h2>
     </x-slot>
 
+    @php $tab = request('tab', 'overview'); @endphp
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @if (session('status'))
@@ -34,33 +36,26 @@
                 </a>
             @endif
 
-            <div x-data="{ tab: 'overview' }">
-                {{-- Tab Navigation --}}
-                <div class="border-b border-gray-200 mb-6">
-                    <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Tabs">
-                        <button type="button"
-                            @click="tab = 'overview'"
-                            :class="tab === 'overview' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
-                            {{ __('Overview') }}
-                        </button>
-                        <button type="button"
-                            @click="tab = 'quality'; $nextTick(() => { window.initDefectTypeChart?.(); window.initDefectTrendChart?.(); })"
-                            :class="tab === 'quality' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
-                            {{ __('Defects & Quality') }}
-                        </button>
-                        <button type="button"
-                            @click="tab = 'team'; $nextTick(() => window.initAiOverrideChart?.())"
-                            :class="tab === 'team' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
-                            {{ __('Team & Rework') }}
-                        </button>
-                    </nav>
-                </div>
+            {{-- Tab Navigation --}}
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Tabs">
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'overview']) }}"
+                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'overview' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        {{ __('Overview') }}
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'quality']) }}"
+                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'quality' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        {{ __('Defects & Quality') }}
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'team']) }}"
+                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'team' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        {{ __('Team & Rework') }}
+                    </a>
+                </nav>
+            </div>
 
-                {{-- Overview Tab --}}
-                <div x-show="tab === 'overview'" class="space-y-6">
+            @if ($tab === 'overview')
+                <div class="space-y-6">
                     {{-- Leather Yield: Expected vs. Actual After Filtration --}}
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Leather Yield</h3>
@@ -138,14 +133,14 @@
                         @endif
                     </div>
                 </div>
-
-                {{-- Defects & Quality Tab --}}
-                <div x-show="tab === 'quality'" x-cloak class="space-y-6">
+            @elseif ($tab === 'quality')
+                <div class="space-y-6">
                     {{-- Defect Distribution --}}
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <h3 class="text-lg font-medium text-gray-900">Defect Distribution</h3>
                             <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="tab" value="quality">
                                 <input type="hidden" name="trend_batch_id" value="{{ $selectedTrendBatchId }}">
                                 <select name="batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
                                     <option value="">All batches</option>
@@ -154,7 +149,7 @@
                                     @endforeach
                                 </select>
                                 @if ($selectedBatchId)
-                                    <a href="{{ route('dashboard.manager', ['trend_batch_id' => $selectedTrendBatchId]) }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+                                    <a href="{{ request()->fullUrlWithQuery(['batch_id' => null]) }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
                                 @endif
                             </form>
                         </div>
@@ -178,9 +173,9 @@
                             </div>
                             @push('scripts')
                                 <script>
-                                    window.initDefectTypeChart = function () {
+                                    document.addEventListener('DOMContentLoaded', () => {
                                         const canvas = document.getElementById('defectTypeChart');
-                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        if (!canvas || !window.Chart) return;
                                         new window.Chart(canvas, {
                                             type: 'doughnut',
                                             data: {
@@ -189,7 +184,7 @@
                                             },
                                             options: { plugins: { legend: { position: 'bottom' } } },
                                         });
-                                    };
+                                    });
                                 </script>
                             @endpush
                         @endif
@@ -200,6 +195,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
                             <h3 class="text-lg font-medium text-gray-900">Defect Trend by Hour</h3>
                             <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="tab" value="quality">
                                 <input type="hidden" name="batch_id" value="{{ $selectedBatchId }}">
                                 <select name="trend_batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
                                     <option value="" @selected($trendMode === 'overall')>Overall (historical pattern)</option>
@@ -243,9 +239,9 @@
                             @endif
                             @push('scripts')
                                 <script>
-                                    window.initDefectTrendChart = function () {
+                                    document.addEventListener('DOMContentLoaded', () => {
                                         const canvas = document.getElementById('defectTrendChart');
-                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        if (!canvas || !window.Chart) return;
                                         const labels = JSON.parse(canvas.dataset.labels);
                                         const values = JSON.parse(canvas.dataset.values);
                                         const spikes = new Set(JSON.parse(canvas.dataset.spikes));
@@ -269,7 +265,7 @@
                                             },
                                             options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
                                         });
-                                    };
+                                    });
                                 </script>
                             @endpush
                         @endif
@@ -301,9 +297,8 @@
                         @endif
                     </div>
                 </div>
-
-                {{-- Team & Rework Tab --}}
-                <div x-show="tab === 'team'" x-cloak class="space-y-6">
+            @else
+                <div class="space-y-6">
                     {{-- Rework Load & Turnaround by Station --}}
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Rework Load & Turnaround by Station</h3>
@@ -397,9 +392,9 @@
                             </div>
                             @push('scripts')
                                 <script>
-                                    window.initAiOverrideChart = function () {
+                                    document.addEventListener('DOMContentLoaded', () => {
                                         const canvas = document.getElementById('aiOverrideChart');
-                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        if (!canvas || !window.Chart) return;
                                         new window.Chart(canvas, {
                                             type: 'bar',
                                             data: {
@@ -408,7 +403,7 @@
                                             },
                                             options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
                                         });
-                                    };
+                                    });
                                 </script>
                             @endpush
                         @else
@@ -416,7 +411,7 @@
                         @endif
                     </div>
                 </div>
-            </div>
+            @endif
 
         </div>
     </div>

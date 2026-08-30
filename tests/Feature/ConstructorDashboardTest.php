@@ -46,15 +46,14 @@ class ConstructorDashboardTest extends TestCase
         $active = $this->makeReworkInspection();
         $resolved = $this->makeReworkInspection(['reworked_at' => now()]);
 
-        $response = $this->actingAs($constructor)->get('/constructor');
+        $activeTab = $this->actingAs($constructor)->get('/constructor');
+        $activeTab->assertOk();
+        $activeTab->assertSeeInOrder(['Rework Notifications', $active->batch->batch_code]);
+        $activeTab->assertDontSee($resolved->batch->batch_code);
 
-        $response->assertOk();
-        $response->assertSeeInOrder([
-            'Rework Notifications',
-            $active->batch->batch_code,
-            'Past Reworks',
-            $resolved->batch->batch_code,
-        ]);
+        $pastTab = $this->actingAs($constructor)->get('/constructor?tab=past');
+        $pastTab->assertOk();
+        $pastTab->assertSeeInOrder(['Past Reworks', $resolved->batch->batch_code]);
     }
 
     public function test_constructor_can_view_an_inspections_defect_image_detail(): void

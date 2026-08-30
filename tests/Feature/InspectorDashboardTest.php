@@ -56,17 +56,14 @@ class InspectorDashboardTest extends TestCase
             'inspected_at' => now(),
         ]);
 
-        $response = $this->actingAs($inspector)->get('/inspector');
+        $pendingTab = $this->actingAs($inspector)->get('/inspector');
+        $pendingTab->assertOk();
+        $pendingTab->assertSeeInOrder(['Pending Inspections', $pending->batch->batch_code]);
+        $pendingTab->assertDontSee($reviewed->batch->batch_code);
 
-        $response->assertOk();
-        $response->assertSee($pending->batch->batch_code);
-        $response->assertSee($reviewed->batch->batch_code);
-        $response->assertSeeInOrder([
-            'Pending Inspections',
-            $pending->batch->batch_code,
-            'Reviewed Inspections',
-            $reviewed->batch->batch_code,
-        ]);
+        $reviewedTab = $this->actingAs($inspector)->get('/inspector?tab=reviewed');
+        $reviewedTab->assertOk();
+        $reviewedTab->assertSeeInOrder(['Reviewed Inspections', $reviewed->batch->batch_code]);
     }
 
     public function test_reviewed_inspections_can_be_filtered_by_decision(): void
@@ -76,7 +73,7 @@ class InspectorDashboardTest extends TestCase
         $passed = $this->makeInspection(['action' => 'pass', 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
         $reworked = $this->makeInspection(['action' => 'rework', 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
 
-        $response = $this->actingAs($inspector)->get('/inspector?decision=pass');
+        $response = $this->actingAs($inspector)->get('/inspector?tab=reviewed&decision=pass');
 
         $response->assertOk();
         $response->assertSee($passed->batch->batch_code);
@@ -90,7 +87,7 @@ class InspectorDashboardTest extends TestCase
         $overridden = $this->makeInspection(['action' => 'pass', 'ai_override' => true, 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
         $notOverridden = $this->makeInspection(['action' => 'pass', 'ai_override' => false, 'inspector_id' => $inspector->id, 'inspected_at' => now()]);
 
-        $response = $this->actingAs($inspector)->get('/inspector?ai_override=1');
+        $response = $this->actingAs($inspector)->get('/inspector?tab=reviewed&ai_override=1');
 
         $response->assertOk();
         $response->assertSee($overridden->batch->batch_code);
@@ -228,7 +225,7 @@ class InspectorDashboardTest extends TestCase
             'inspected_at' => now(),
         ]);
 
-        $response = $this->actingAs($inspector)->get('/inspector');
+        $response = $this->actingAs($inspector)->get('/inspector?tab=reviewed');
 
         $response->assertOk();
         $response->assertSee('marking');

@@ -43,11 +43,13 @@ class ManagerDashboardTest extends TestCase
             'confidence_score' => 0.88,
         ]);
 
-        $response = $this->actingAs($manager)->get('/manager');
+        $overview = $this->actingAs($manager)->get('/manager');
+        $overview->assertOk();
+        $overview->assertSee('MGR-001');
 
-        $response->assertOk();
-        $response->assertSee('MGR-001');
-        $response->assertSee('scratch');
+        $quality = $this->actingAs($manager)->get('/manager?tab=quality');
+        $quality->assertOk();
+        $quality->assertSee('scratch');
     }
 
     public function test_manager_dashboard_shows_ai_override_analytics(): void

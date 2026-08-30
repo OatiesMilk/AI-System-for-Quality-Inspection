@@ -26,7 +26,7 @@ class AdminDashboardTest extends TestCase
         $admin = User::factory()->create(['role' => 'system_admin']);
         $inspector = User::factory()->create(['role' => 'quality_inspector', 'name' => 'Listed Inspector']);
 
-        $response = $this->actingAs($admin)->get('/admin');
+        $response = $this->actingAs($admin)->get('/admin?tab=accounts');
 
         $response->assertOk();
         $response->assertSee('Listed Inspector');

@@ -34,6 +34,7 @@ class DashboardController extends Controller
     public function inspector(Request $request): View
     {
         $request->validate([
+            'tab' => ['nullable', 'in:pending,reviewed,resolved'],
             'decision' => ['nullable', 'in:pass,rework,reject'],
             'ai_override' => ['nullable', 'in:0,1'],
             'date_from' => ['nullable', 'date'],
@@ -136,6 +137,7 @@ class DashboardController extends Controller
     public function manager(Request $request, DecisionSupportService $decisionSupportService): View
     {
         $request->validate([
+            'tab' => ['nullable', 'in:overview,quality,team'],
             'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
             'trend_batch_id' => ['nullable', 'integer', 'exists:batches,id'],
         ]);
@@ -352,6 +354,7 @@ class DashboardController extends Controller
     public function admin(Request $request): View
     {
         $request->validate([
+            'tab' => ['nullable', 'in:overview,accounts,activity'],
             'action' => ['nullable', 'string'],
             'user_id' => ['nullable', 'integer'],
             'date_from' => ['nullable', 'date'],
@@ -434,6 +437,10 @@ class DashboardController extends Controller
 
     public function constructor(Request $request): View
     {
+        $request->validate([
+            'tab' => ['nullable', 'in:active,past'],
+        ]);
+
         $reworkInspections = Inspection::with('batch', 'defects')
             ->where('action', 'rework')
             ->whereNull('reworked_at')
@@ -462,6 +469,7 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'rework_status' => ['required', 'in:not_started,in_progress,completed'],
+            'tab' => ['nullable', 'in:active,past'],
         ]);
 
         $completed = $validated['rework_status'] === 'completed';
@@ -477,7 +485,7 @@ class DashboardController extends Controller
             'rework_status' => $validated['rework_status'],
         ]);
 
-        return redirect()->route('dashboard.constructor')
+        return redirect()->route('dashboard.constructor', array_filter(['tab' => $validated['tab'] ?? null]))
             ->with('status', "Inspection #{$inspection->id} marked as ".str_replace('_', ' ', $validated['rework_status']).'.');
     }
 }
