@@ -1,13 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
             {{ __('Create Production Batch') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <form method="POST" action="{{ route('manager.batches.store') }}">
                     @csrf
 
@@ -29,7 +29,7 @@
                     <div class="mt-4">
                         <x-input-label for="expected_pieces" :value="__('Expected Leather Pieces')" />
                         <x-text-input id="expected_pieces" class="block mt-1 w-full" type="number" min="1" name="expected_pieces" :value="old('expected_pieces')" required placeholder="e.g. 50" />
-                        <p class="text-xs text-gray-500 mt-1">{{ __('Target number of leather pieces for this batch.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Target number of leather pieces for this batch.') }}</p>
                         <x-input-error :messages="$errors->get('expected_pieces')" class="mt-2" />
                     </div>
 
@@ -37,7 +37,7 @@
                     <div class="mt-4">
                         <x-input-label for="manufacturing_stage" :value="__('Manufacturing Stage')" />
                         <select id="manufacturing_stage" name="manufacturing_stage" required
-                            class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            class="block mt-1 w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                             <option value="" disabled {{ old('manufacturing_stage') ? '' : 'selected' }}>{{ __('Select a stage') }}</option>
                             <option value="preparation" {{ old('manufacturing_stage') === 'preparation' ? 'selected' : '' }}>{{ __('Preparation') }}</option>
                             <option value="pre_assembly" {{ old('manufacturing_stage') === 'pre_assembly' ? 'selected' : '' }}>{{ __('Pre-Assembly') }}</option>
@@ -46,7 +46,7 @@
                     </div>
 
                     <div class="flex items-center justify-end mt-6">
-                        <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('dashboard.manager') }}">
+                        <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('dashboard.manager') }}">
                             {{ __('Cancel') }}
                         </a>
 

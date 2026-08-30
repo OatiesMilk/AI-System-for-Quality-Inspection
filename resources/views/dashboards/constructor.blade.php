@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
             {{ __('Shoe Constructor Dashboard') }}
         </h2>
     </x-slot>
@@ -10,52 +10,52 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @if (session('status'))
-                <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 rounded-lg p-4">
                     {{ session('status') }}
                 </div>
             @endif
 
             {{-- Tab Navigation --}}
-            <div class="border-b border-gray-200">
+            <div class="border-b border-gray-200 dark:border-gray-700">
                 <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Tabs">
                     <a href="{{ request()->fullUrlWithQuery(['tab' => 'active']) }}"
-                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'active' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'active' ? 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500' }}">
                         {{ __('Rework Notifications') }}
                     </a>
                     <a href="{{ request()->fullUrlWithQuery(['tab' => 'past']) }}"
-                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'past' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition {{ $tab === 'past' ? 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500' }}">
                         {{ __('Past Reworks') }}
                     </a>
                 </nav>
             </div>
 
             @if ($tab === 'active')
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Rework Notifications</h3>
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Rework Notifications</h3>
 
                     @if ($reworkInspections->isEmpty())
-                        <p class="text-gray-500">No rework items assigned to you right now.</p>
+                        <p class="text-gray-500 dark:text-gray-400">No rework items assigned to you right now.</p>
                     @else
                         {{-- Card layout: phones and small tablets --}}
                         <div class="space-y-3 md:hidden">
                             @foreach ($reworkInspections as $inspection)
-                                <div class="border border-gray-200 rounded-lg p-4 space-y-2">
+                                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
                                     <div class="flex items-center justify-between">
-                                        <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
-                                        <span class="text-xs text-gray-500 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">{{ $inspection->batch?->batch_code ?? '-' }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
                                     </div>
-                                    <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Inspection #{{ $inspection->id }}</p>
                                     @if ($inspection->rework_station)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 capitalize">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 capitalize">
                                             {{ str_replace('_', ' ', $inspection->rework_station) }}
                                         </span>
                                     @endif
-                                    <p class="text-sm text-gray-600 capitalize">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 capitalize">
                                         {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                     </p>
-                                    <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
                                     <div class="flex items-center justify-between pt-1">
-                                        <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
+                                        <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium hover:underline">View</a>
                                     </div>
                                     @include('dashboards.partials.rework-status-form', ['inspection' => $inspection])
                                 </div>
@@ -63,10 +63,10 @@
                         </div>
 
                         {{-- Table layout: medium screens and up --}}
-                        <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <div class="hidden md:block overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr class="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         <th class="px-6 py-3 whitespace-nowrap">Inspection #</th>
                                         <th class="px-6 py-3 whitespace-nowrap">Batch</th>
                                         <th class="px-6 py-3 whitespace-nowrap">Checkpoint</th>
@@ -77,19 +77,19 @@
                                         <th class="px-6 py-3 whitespace-nowrap">Progress</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     @foreach ($reworkInspections as $inspection)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
-                                            <td class="px-6 py-4 text-sm text-gray-600 capitalize">
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $inspection->id }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $inspection->batch?->batch_code ?? '-' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
                                                 {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->created_at->diffForHumans() }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{{ $inspection->created_at->diffForHumans() }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
+                                                <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium hover:underline">View</a>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                                 @include('dashboards.partials.rework-status-form', ['inspection' => $inspection])
@@ -102,47 +102,47 @@
                     @endif
                 </div>
             @else
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Past Reworks</h3>
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Past Reworks</h3>
 
                     @if ($resolvedReworks->isEmpty())
-                        <p class="text-gray-500">No resolved rework items yet.</p>
+                        <p class="text-gray-500 dark:text-gray-400">No resolved rework items yet.</p>
                     @else
                         {{-- Card layout: phones and small tablets --}}
                         <div class="space-y-3 md:hidden">
                             @foreach ($resolvedReworks as $inspection)
-                                <div class="border border-gray-200 rounded-lg p-4 space-y-2">
+                                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
                                     <div class="flex items-center justify-between">
-                                        <span class="font-semibold text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</span>
-                                        <span class="text-xs text-gray-500 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">{{ $inspection->batch?->batch_code ?? '-' }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</span>
                                     </div>
-                                    <p class="text-xs text-gray-500">Inspection #{{ $inspection->id }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Inspection #{{ $inspection->id }}</p>
                                     @if ($inspection->rework_station)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 capitalize">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 capitalize">
                                             {{ str_replace('_', ' ', $inspection->rework_station) }}
                                         </span>
                                     @endif
-                                    <p class="text-sm text-gray-600 capitalize">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 capitalize">
                                         {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                     </p>
-                                    <p class="text-xs text-gray-500">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Flagged {{ $inspection->created_at->diffForHumans() }}</p>
                                     <div class="flex items-center justify-between pt-1">
-                                        <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                        <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium hover:underline">View</a>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
                                             Resolved {{ $inspection->reworked_at->diffForHumans() }}
                                         </span>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-1">{{ __('Marked complete by mistake?') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Marked complete by mistake?') }}</p>
                                     @include('dashboards.partials.rework-status-form', ['inspection' => $inspection])
                                 </div>
                             @endforeach
                         </div>
 
                         {{-- Table layout: medium screens and up --}}
-                        <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <div class="hidden md:block overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr class="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         <th class="px-6 py-3 whitespace-nowrap">Inspection #</th>
                                         <th class="px-6 py-3 whitespace-nowrap">Batch</th>
                                         <th class="px-6 py-3 whitespace-nowrap">Checkpoint</th>
@@ -154,22 +154,22 @@
                                         <th class="px-6 py-3 whitespace-nowrap">Progress</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     @foreach ($resolvedReworks as $inspection)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->id }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $inspection->batch?->batch_code ?? '-' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
-                                            <td class="px-6 py-4 text-sm text-gray-600 capitalize">
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $inspection->id }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $inspection->batch?->batch_code ?? '-' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">{{ str_replace('_', ' ', $inspection->checkpoint) }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">{{ $inspection->rework_station ? str_replace('_', ' ', $inspection->rework_station) : '—' }}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
                                                 {{ $inspection->defects->pluck('defect_type')->unique()->map(fn ($t) => str_replace('_', ' ', $t))->join(', ') }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $inspection->created_at->diffForHumans() }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{{ $inspection->created_at->diffForHumans() }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">View</a>
+                                                <a href="{{ route('constructor.inspections.show', $inspection) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium hover:underline">View</a>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
                                                     {{ $inspection->reworked_at->diffForHumans() }}
                                                 </span>
                                             </td>
