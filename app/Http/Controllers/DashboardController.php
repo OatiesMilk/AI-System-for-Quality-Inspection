@@ -163,6 +163,14 @@ class DashboardController extends Controller
         $overriddenCount = Inspection::where('ai_override', true)->count();
         $overrideRate = $reviewedCount > 0 ? round(($overriddenCount / $reviewedCount) * 100, 1) : 0;
 
+        // Expected vs. actual leather pieces after filtration, aggregated across all batches
+        $totalExpectedPieces = (int) Batch::sum('expected_pieces');
+        $totalProducedPieces = Inspection::count();
+        $totalPassedPieces = Inspection::where('action', 'pass')->count();
+        $overallYieldRate = $totalExpectedPieces > 0
+            ? round(($totalPassedPieces / $totalExpectedPieces) * 100, 1)
+            : null;
+
         // Batch pass/fail/rework rates, plus expected vs. produced piece counts
         $batchStats = Batch::with('inspections')->latest()->limit(10)->get()->map(function (Batch $batch) {
             $produced = $batch->inspections->count();
@@ -251,6 +259,25 @@ class DashboardController extends Controller
                 ],
             ]);
 
+        // Rework load and turnaround time by responsible station
+        $reworkStationStats = Inspection::where('action', 'rework')
+            ->whereNotNull('rework_station')
+            ->get(['rework_station', 'inspected_at', 'reworked_at'])
+            ->groupBy('rework_station')
+            ->map(function ($group) {
+                $resolved = $group->whereNotNull('reworked_at');
+                $avgMinutes = $resolved->isNotEmpty()
+                    ? (int) round($resolved->avg(fn ($i) => $i->inspected_at->diffInMinutes($i->reworked_at)))
+                    : null;
+
+                return [
+                    'total'              => $group->count(),
+                    'resolved'           => $resolved->count(),
+                    'avg_turnaround'     => $this->formatDuration($avgMinutes),
+                ];
+            })
+            ->sortByDesc('total');
+
         // Inspector performance
         $inspectorStats = Inspection::query()
             ->whereNotNull('action')
@@ -280,6 +307,10 @@ class DashboardController extends Controller
             'reviewedCount',
             'overriddenCount',
             'overrideRate',
+            'totalExpectedPieces',
+            'totalProducedPieces',
+            'totalPassedPieces',
+            'overallYieldRate',
             'batchStats',
             'selectedTrendBatchId',
             'trendMode',
@@ -288,9 +319,34 @@ class DashboardController extends Controller
             'hourlySpikes',
             'spikeHours',
             'checkpointStats',
+            'reworkStationStats',
             'inspectorStats',
             'topInsight',
         ));
+    }
+
+    /**
+     * Format a minute count as a short human-readable duration (e.g. "2h 15m").
+     */
+    protected function formatDuration(?int $minutes): ?string
+    {
+        if ($minutes === null) {
+            return null;
+        }
+
+        $days = intdiv($minutes, 1440);
+        $hours = intdiv($minutes % 1440, 60);
+        $mins = $minutes % 60;
+
+        if ($days > 0) {
+            return "{$days}d {$hours}h";
+        }
+
+        if ($hours > 0) {
+            return "{$hours}h {$mins}m";
+        }
+
+        return "{$mins}m";
     }
 
     public function admin(Request $request): View

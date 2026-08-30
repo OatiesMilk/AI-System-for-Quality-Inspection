@@ -102,6 +102,60 @@ class ManagerDashboardTest extends TestCase
         $response->assertViewHas('aiOverrideCounts', fn ($counts) => $counts->get('hole') === 1 && ! $counts->has('scratch'));
     }
 
+    public function test_manager_dashboard_shows_leather_yield_summary(): void
+    {
+        $manager = User::factory()->create(['role' => 'product_manager']);
+
+        $batch = Batch::create([
+            'batch_code' => 'YIELD-001',
+            'production_date' => now(),
+            'expected_pieces' => 100,
+            'manufacturing_stage' => 'pre_assembly',
+        ]);
+
+        Inspection::create(['batch_id' => $batch->id, 'checkpoint' => 'pre_assembly', 'action' => 'pass', 'inspected_at' => now()]);
+        Inspection::create(['batch_id' => $batch->id, 'checkpoint' => 'pre_assembly', 'action' => 'pass', 'inspected_at' => now()]);
+        Inspection::create(['batch_id' => $batch->id, 'checkpoint' => 'pre_assembly', 'action' => 'reject', 'inspected_at' => now()]);
+
+        $response = $this->actingAs($manager)->get('/manager');
+
+        $response->assertOk();
+        $response->assertViewHas('totalExpectedPieces', 100);
+        $response->assertViewHas('totalProducedPieces', 3);
+        $response->assertViewHas('totalPassedPieces', 2);
+        $response->assertViewHas('overallYieldRate', 2.0);
+    }
+
+    public function test_manager_dashboard_shows_rework_turnaround_by_station(): void
+    {
+        $manager = User::factory()->create(['role' => 'product_manager']);
+
+        $batch = Batch::create([
+            'batch_code' => 'TURN-001',
+            'production_date' => now(),
+            'manufacturing_stage' => 'pre_assembly',
+        ]);
+
+        Inspection::create([
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'action' => 'rework',
+            'rework_station' => 'cutting',
+            'rework_status' => 'completed',
+            'inspected_at' => now()->subHours(3),
+            'reworked_at' => now()->subHours(1),
+        ]);
+
+        $response = $this->actingAs($manager)->get('/manager');
+
+        $response->assertOk();
+        $response->assertViewHas('reworkStationStats', fn ($stats) =>
+            $stats->get('cutting')['total'] === 1
+            && $stats->get('cutting')['resolved'] === 1
+            && $stats->get('cutting')['avg_turnaround'] === '2h 0m'
+        );
+    }
+
     public function test_manager_cannot_access_user_account_creation(): void
     {
         $manager = User::factory()->create(['role' => 'product_manager']);

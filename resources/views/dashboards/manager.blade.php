@@ -50,296 +50,388 @@
                 </a>
             @endif
 
-            {{-- Defect Distribution --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">Defect Distribution</h3>
-                    <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
-                        <input type="hidden" name="trend_batch_id" value="{{ $selectedTrendBatchId }}">
-                        <select name="batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
-                            <option value="">All batches</option>
-                            @foreach ($batches as $batch)
-                                <option value="{{ $batch->id }}" @selected($selectedBatchId == $batch->id)>{{ $batch->batch_code }}</option>
-                            @endforeach
-                        </select>
-                        @if ($selectedBatchId)
-                            <a href="{{ route('dashboard.manager', ['trend_batch_id' => $selectedTrendBatchId]) }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
-                        @endif
-                    </form>
+            <div x-data="{ tab: 'overview' }">
+                {{-- Tab Navigation --}}
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Tabs">
+                        <button type="button"
+                            @click="tab = 'overview'"
+                            :class="tab === 'overview' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
+                            {{ __('Overview') }}
+                        </button>
+                        <button type="button"
+                            @click="tab = 'quality'; $nextTick(() => { window.initDefectTypeChart?.(); window.initDefectTrendChart?.(); })"
+                            :class="tab === 'quality' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
+                            {{ __('Defects & Quality') }}
+                        </button>
+                        <button type="button"
+                            @click="tab = 'team'; $nextTick(() => window.initAiOverrideChart?.())"
+                            :class="tab === 'team' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition">
+                            {{ __('Team & Rework') }}
+                        </button>
+                    </nav>
                 </div>
-                @if ($defectCounts->isEmpty())
-                    <p class="text-gray-500">No defect data recorded yet.</p>
-                @else
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-                        <div class="max-w-xs mx-auto">
-                            <canvas id="defectTypeChart"
-                                data-labels="{{ $defectCounts->keys()->map(fn ($t) => str_replace('_', ' ', $t))->toJson() }}"
-                                data-values="{{ $defectCounts->values()->toJson() }}"></canvas>
-                        </div>
-                        <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                            @foreach ($defectCounts as $type => $total)
-                                <li class="border rounded-lg p-4">
-                                    <div class="text-sm text-gray-500 capitalize">{{ str_replace('_', ' ', $type) }}</div>
-                                    <div class="text-2xl font-semibold text-gray-900">{{ $total }}</div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @push('scripts')
-                        <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                const canvas = document.getElementById('defectTypeChart');
-                                if (!canvas || !window.Chart) return;
-                                new window.Chart(canvas, {
-                                    type: 'doughnut',
-                                    data: {
-                                        labels: JSON.parse(canvas.dataset.labels),
-                                        datasets: [{ data: JSON.parse(canvas.dataset.values), backgroundColor: ['#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6','#a855f7'] }],
-                                    },
-                                    options: { plugins: { legend: { position: 'bottom' } } },
-                                });
-                            });
-                        </script>
-                    @endpush
-                @endif
-            </div>
 
-            {{-- Defect Trend --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
-                    <h3 class="text-lg font-medium text-gray-900">Defect Trend by Hour</h3>
-                    <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
-                        <input type="hidden" name="batch_id" value="{{ $selectedBatchId }}">
-                        <select name="trend_batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
-                            <option value="" @selected($trendMode === 'overall')>Overall (historical pattern)</option>
-                            @foreach ($batches as $batch)
-                                <option value="{{ $batch->id }}" @selected($selectedTrendBatchId == $batch->id)>{{ $batch->batch_code }}</option>
-                            @endforeach
-                        </select>
-                    </form>
-                </div>
-                <p class="text-sm text-gray-500 mb-4">
-                    @if ($trendMode === 'overall')
-                        Defect count for each hour of the day, across all recorded history.
-                    @else
-                        Defect count for each hour of the day, for the selected batch only.
-                    @endif
-                </p>
-                @if ($trendValues->sum() === 0)
-                    <p class="text-gray-500">No defect data recorded yet.</p>
-                @else
-                    <div class="w-full">
-                        <canvas id="defectTrendChart"
-                            data-labels="{{ $trendLabels->toJson() }}"
-                            data-values="{{ $trendValues->toJson() }}"
-                            data-spikes="{{ $spikeHours->toJson() }}"></canvas>
+                {{-- Overview Tab --}}
+                <div x-show="tab === 'overview'" class="space-y-6">
+                    {{-- Leather Yield: Expected vs. Actual After Filtration --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Leather Yield</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">Expected Pieces</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $totalExpectedPieces }}</div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">Produced</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $totalProducedPieces }}</div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">Passed After Filtration</div>
+                                <div class="text-2xl font-semibold text-green-600">{{ $totalPassedPieces }}</div>
+                            </div>
+                            <div class="border-2 rounded-lg p-4 @if(($overallYieldRate ?? 0) >= 90) border-green-200 bg-green-50 @elseif(($overallYieldRate ?? 0) >= 75) border-yellow-200 bg-yellow-50 @else border-red-200 bg-red-50 @endif">
+                                <div class="text-sm text-gray-500">Yield</div>
+                                <div class="text-3xl font-bold @if(($overallYieldRate ?? 0) >= 90) text-green-600 @elseif(($overallYieldRate ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
+                                    {{ $overallYieldRate !== null ? $overallYieldRate.'%' : '—' }}
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">{{ __('Yield = pieces that passed inspection ÷ total expected pieces, across all batches.') }}</p>
                     </div>
-                    @if ($trendMode === 'overall' && $hourlySpikes->isNotEmpty())
-                        <div class="mt-4 border-t pt-4">
-                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Historical spike hours</h4>
-                            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                @foreach ($hourlySpikes as $spike)
-                                    <li class="flex items-center gap-2 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                                        <span class="font-semibold text-red-700">{{ $spike['hour'] }}</span>
-                                        <span class="text-gray-600">{{ $spike['total'] }} defects</span>
-                                        @if ($spike['dominant_type'])
-                                            <span class="ml-auto text-xs text-gray-500 capitalize">mostly {{ $spike['dominant_type'] }}</span>
-                                        @endif
+
+                    {{-- Batch Pass/Fail Rates --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Batch Pass / Rework / Reject Rates</h3>
+                        @if ($batchStats->isEmpty())
+                            <p class="text-gray-500">No batch data recorded yet.</p>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs font-medium text-gray-500 uppercase">
+                                            <th class="py-2 pr-4">Batch</th>
+                                            <th class="py-2 pr-4">Stage</th>
+                                            <th class="py-2 pr-4">Expected</th>
+                                            <th class="py-2 pr-4">Produced</th>
+                                            <th class="py-2 pr-4">Pass</th>
+                                            <th class="py-2 pr-4">Rework</th>
+                                            <th class="py-2 pr-4">Reject</th>
+                                            <th class="py-2 pr-4">Pass Rate</th>
+                                            <th class="py-2 pr-4">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @foreach ($batchStats as $batch)
+                                            <tr>
+                                                <td class="py-2 pr-4 font-medium text-gray-900">{{ $batch['batch_code'] }}</td>
+                                                <td class="py-2 pr-4 capitalize">{{ str_replace('_', ' ', $batch['stage']) }}</td>
+                                                <td class="py-2 pr-4">{{ $batch['expected_pieces'] ?? '—' }}</td>
+                                                <td class="py-2 pr-4">{{ $batch['produced'] }}</td>
+                                                <td class="py-2 pr-4 text-green-600">{{ $batch['pass'] }}</td>
+                                                <td class="py-2 pr-4 text-yellow-600">{{ $batch['rework'] }}</td>
+                                                <td class="py-2 pr-4 text-red-600">{{ $batch['reject'] }}</td>
+                                                <td class="py-2 pr-4">
+                                                    @if ($batch['pass_rate'] !== null)
+                                                        <span class="font-semibold @if($batch['pass_rate'] >= 90) text-green-600 @elseif($batch['pass_rate'] >= 75) text-yellow-600 @else text-red-600 @endif">
+                                                            {{ $batch['pass_rate'] }}%
+                                                        </span>
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </td>
+                                                <td class="py-2 pr-4">
+                                                    <a href="{{ route('manager.batches.edit', $batch['id']) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">Edit</a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Defects & Quality Tab --}}
+                <div x-show="tab === 'quality'" x-cloak class="space-y-6">
+                    {{-- Defect Distribution --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Defect Distribution</h3>
+                            <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="trend_batch_id" value="{{ $selectedTrendBatchId }}">
+                                <select name="batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
+                                    <option value="">All batches</option>
+                                    @foreach ($batches as $batch)
+                                        <option value="{{ $batch->id }}" @selected($selectedBatchId == $batch->id)>{{ $batch->batch_code }}</option>
+                                    @endforeach
+                                </select>
+                                @if ($selectedBatchId)
+                                    <a href="{{ route('dashboard.manager', ['trend_batch_id' => $selectedTrendBatchId]) }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+                                @endif
+                            </form>
+                        </div>
+                        @if ($defectCounts->isEmpty())
+                            <p class="text-gray-500">No defect data recorded yet.</p>
+                        @else
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                                <div class="max-w-xs mx-auto">
+                                    <canvas id="defectTypeChart"
+                                        data-labels="{{ $defectCounts->keys()->map(fn ($t) => str_replace('_', ' ', $t))->toJson() }}"
+                                        data-values="{{ $defectCounts->values()->toJson() }}"></canvas>
+                                </div>
+                                <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
+                                    @foreach ($defectCounts as $type => $total)
+                                        <li class="border rounded-lg p-4">
+                                            <div class="text-sm text-gray-500 capitalize">{{ str_replace('_', ' ', $type) }}</div>
+                                            <div class="text-2xl font-semibold text-gray-900">{{ $total }}</div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @push('scripts')
+                                <script>
+                                    window.initDefectTypeChart = function () {
+                                        const canvas = document.getElementById('defectTypeChart');
+                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        new window.Chart(canvas, {
+                                            type: 'doughnut',
+                                            data: {
+                                                labels: JSON.parse(canvas.dataset.labels),
+                                                datasets: [{ data: JSON.parse(canvas.dataset.values), backgroundColor: ['#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6','#a855f7'] }],
+                                            },
+                                            options: { plugins: { legend: { position: 'bottom' } } },
+                                        });
+                                    };
+                                </script>
+                            @endpush
+                        @endif
+                    </div>
+
+                    {{-- Defect Trend --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+                            <h3 class="text-lg font-medium text-gray-900">Defect Trend by Hour</h3>
+                            <form method="GET" action="{{ route('dashboard.manager') }}" class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="batch_id" value="{{ $selectedBatchId }}">
+                                <select name="trend_batch_id" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300">
+                                    <option value="" @selected($trendMode === 'overall')>Overall (historical pattern)</option>
+                                    @foreach ($batches as $batch)
+                                        <option value="{{ $batch->id }}" @selected($selectedTrendBatchId == $batch->id)>{{ $batch->batch_code }}</option>
+                                    @endforeach
+                                </select>
+                            </form>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-4">
+                            @if ($trendMode === 'overall')
+                                Defect count for each hour of the day, across all recorded history.
+                            @else
+                                Defect count for each hour of the day, for the selected batch only.
+                            @endif
+                        </p>
+                        @if ($trendValues->sum() === 0)
+                            <p class="text-gray-500">No defect data recorded yet.</p>
+                        @else
+                            <div class="w-full">
+                                <canvas id="defectTrendChart"
+                                    data-labels="{{ $trendLabels->toJson() }}"
+                                    data-values="{{ $trendValues->toJson() }}"
+                                    data-spikes="{{ $spikeHours->toJson() }}"></canvas>
+                            </div>
+                            @if ($trendMode === 'overall' && $hourlySpikes->isNotEmpty())
+                                <div class="mt-4 border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Historical spike hours</h4>
+                                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @foreach ($hourlySpikes as $spike)
+                                            <li class="flex items-center gap-2 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                                                <span class="font-semibold text-red-700">{{ $spike['hour'] }}</span>
+                                                <span class="text-gray-600">{{ $spike['total'] }} defects</span>
+                                                @if ($spike['dominant_type'])
+                                                    <span class="ml-auto text-xs text-gray-500 capitalize">mostly {{ $spike['dominant_type'] }}</span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                            @push('scripts')
+                                <script>
+                                    window.initDefectTrendChart = function () {
+                                        const canvas = document.getElementById('defectTrendChart');
+                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        const labels = JSON.parse(canvas.dataset.labels);
+                                        const values = JSON.parse(canvas.dataset.values);
+                                        const spikes = new Set(JSON.parse(canvas.dataset.spikes));
+                                        const pointColors = labels.map(label => spikes.has(label) ? '#ef4444' : '#6366f1');
+                                        const pointRadii = labels.map(label => spikes.has(label) ? 5 : 3);
+                                        new window.Chart(canvas, {
+                                            type: 'line',
+                                            data: {
+                                                labels,
+                                                datasets: [{
+                                                    label: 'Defects Detected',
+                                                    data: values,
+                                                    borderColor: '#6366f1',
+                                                    backgroundColor: 'rgba(99,102,241,0.1)',
+                                                    pointBackgroundColor: pointColors,
+                                                    pointBorderColor: pointColors,
+                                                    pointRadius: pointRadii,
+                                                    fill: true,
+                                                    tension: 0.3,
+                                                }],
+                                            },
+                                            options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+                                        });
+                                    };
+                                </script>
+                            @endpush
+                        @endif
+                    </div>
+
+                    {{-- Checkpoint Comparison --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Checkpoint Comparison</h3>
+                        @if ($checkpointStats->isEmpty())
+                            <p class="text-gray-500 text-sm">No checkpoint data available.</p>
+                        @else
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                @foreach ($checkpointStats as $checkpoint => $stats)
+                                    <li class="border rounded-lg p-4">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="font-semibold text-gray-800 capitalize">{{ str_replace('_', ' ', $checkpoint) }}</span>
+                                            <span class="text-sm font-medium @if(($stats['pass_rate'] ?? 0) >= 90) text-green-600 @elseif(($stats['pass_rate'] ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
+                                                {{ $stats['pass_rate'] ?? '—' }}% pass
+                                            </span>
+                                        </div>
+                                        <div class="w-full bg-gray-100 rounded-full h-2">
+                                            <div class="h-2 rounded-full @if(($stats['pass_rate'] ?? 0) >= 90) bg-green-500 @elseif(($stats['pass_rate'] ?? 0) >= 75) bg-yellow-500 @else bg-red-500 @endif"
+                                                style="width: {{ $stats['pass_rate'] ?? 0 }}%"></div>
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">{{ $stats['total'] }} inspections</div>
                                     </li>
                                 @endforeach
                             </ul>
-                        </div>
-                    @endif
-                    @push('scripts')
-                        <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                const canvas = document.getElementById('defectTrendChart');
-                                if (!canvas || !window.Chart) return;
-                                const labels = JSON.parse(canvas.dataset.labels);
-                                const values = JSON.parse(canvas.dataset.values);
-                                const spikes = new Set(JSON.parse(canvas.dataset.spikes));
-                                const pointColors = labels.map(label => spikes.has(label) ? '#ef4444' : '#6366f1');
-                                const pointRadii = labels.map(label => spikes.has(label) ? 5 : 3);
-                                new window.Chart(canvas, {
-                                    type: 'line',
-                                    data: {
-                                        labels,
-                                        datasets: [{
-                                            label: 'Defects Detected',
-                                            data: values,
-                                            borderColor: '#6366f1',
-                                            backgroundColor: 'rgba(99,102,241,0.1)',
-                                            pointBackgroundColor: pointColors,
-                                            pointBorderColor: pointColors,
-                                            pointRadius: pointRadii,
-                                            fill: true,
-                                            tension: 0.3,
-                                        }],
-                                    },
-                                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
-                                });
-                            });
-                        </script>
-                    @endpush
-                @endif
-            </div>
-
-            {{-- Batch Pass/Fail Rates --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Batch Pass / Rework / Reject Rates</h3>
-                @if ($batchStats->isEmpty())
-                    <p class="text-gray-500">No batch data recorded yet.</p>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead>
-                                <tr class="text-left text-xs font-medium text-gray-500 uppercase">
-                                    <th class="py-2 pr-4">Batch</th>
-                                    <th class="py-2 pr-4">Stage</th>
-                                    <th class="py-2 pr-4">Expected</th>
-                                    <th class="py-2 pr-4">Produced</th>
-                                    <th class="py-2 pr-4">Pass</th>
-                                    <th class="py-2 pr-4">Rework</th>
-                                    <th class="py-2 pr-4">Reject</th>
-                                    <th class="py-2 pr-4">Pass Rate</th>
-                                    <th class="py-2 pr-4">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach ($batchStats as $batch)
-                                    <tr>
-                                        <td class="py-2 pr-4 font-medium text-gray-900">{{ $batch['batch_code'] }}</td>
-                                        <td class="py-2 pr-4 capitalize">{{ str_replace('_', ' ', $batch['stage']) }}</td>
-                                        <td class="py-2 pr-4">{{ $batch['expected_pieces'] ?? '—' }}</td>
-                                        <td class="py-2 pr-4">{{ $batch['produced'] }}</td>
-                                        <td class="py-2 pr-4 text-green-600">{{ $batch['pass'] }}</td>
-                                        <td class="py-2 pr-4 text-yellow-600">{{ $batch['rework'] }}</td>
-                                        <td class="py-2 pr-4 text-red-600">{{ $batch['reject'] }}</td>
-                                        <td class="py-2 pr-4">
-                                            @if ($batch['pass_rate'] !== null)
-                                                <span class="font-semibold @if($batch['pass_rate'] >= 90) text-green-600 @elseif($batch['pass_rate'] >= 75) text-yellow-600 @else text-red-600 @endif">
-                                                    {{ $batch['pass_rate'] }}%
-                                                </span>
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                        <td class="py-2 pr-4">
-                                            <a href="{{ route('manager.batches.edit', $batch['id']) }}" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">Edit</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-
-            {{-- Checkpoint Comparison --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Checkpoint Comparison</h3>
-                @if ($checkpointStats->isEmpty())
-                    <p class="text-gray-500 text-sm">No checkpoint data available.</p>
-                @else
-                    <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        @foreach ($checkpointStats as $checkpoint => $stats)
-                            <li class="border rounded-lg p-4">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-semibold text-gray-800 capitalize">{{ str_replace('_', ' ', $checkpoint) }}</span>
-                                    <span class="text-sm font-medium @if(($stats['pass_rate'] ?? 0) >= 90) text-green-600 @elseif(($stats['pass_rate'] ?? 0) >= 75) text-yellow-600 @else text-red-600 @endif">
-                                        {{ $stats['pass_rate'] ?? '—' }}% pass
-                                    </span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="h-2 rounded-full @if(($stats['pass_rate'] ?? 0) >= 90) bg-green-500 @elseif(($stats['pass_rate'] ?? 0) >= 75) bg-yellow-500 @else bg-red-500 @endif"
-                                        style="width: {{ $stats['pass_rate'] ?? 0 }}%"></div>
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">{{ $stats['total'] }} inspections</div>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-
-            {{-- Inspector Performance --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Inspector Performance</h3>
-                @if ($inspectorStats->isEmpty())
-                    <p class="text-gray-500 text-sm">No inspector activity recorded yet.</p>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead>
-                                <tr class="text-left text-xs font-medium text-gray-500 uppercase">
-                                    <th class="py-2 pr-4">Inspector</th>
-                                    <th class="py-2 pr-4">Total Reviewed</th>
-                                    <th class="py-2 pr-4">Passed</th>
-                                    <th class="py-2 pr-4">AI Overrides</th>
-                                    <th class="py-2 pr-4">Override Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach ($inspectorStats as $inspector)
-                                    <tr>
-                                        <td class="py-2 pr-4 font-medium text-gray-900">{{ $inspector['name'] }}</td>
-                                        <td class="py-2 pr-4">{{ $inspector['total'] }}</td>
-                                        <td class="py-2 pr-4 text-green-600">{{ $inspector['pass'] }}</td>
-                                        <td class="py-2 pr-4">{{ $inspector['overrides'] }}</td>
-                                        <td class="py-2 pr-4">
-                                            <span class="font-medium @if(($inspector['override_rate'] ?? 0) > 30) text-red-600 @elseif(($inspector['override_rate'] ?? 0) > 15) text-yellow-600 @else text-gray-700 @endif">
-                                                {{ $inspector['override_rate'] ?? '—' }}%
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-
-            {{-- AI Override Analytics --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">AI Override Analytics</h3>
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="border rounded-lg p-4">
-                        <div class="text-sm text-gray-500">Reviewed Inspections</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ $reviewedCount }}</div>
-                    </div>
-                    <div class="border rounded-lg p-4">
-                        <div class="text-sm text-gray-500">AI Overridden</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ $overriddenCount }}</div>
-                    </div>
-                    <div class="border rounded-lg p-4">
-                        <div class="text-sm text-gray-500">Override Rate</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ $overrideRate }}%</div>
+                        @endif
                     </div>
                 </div>
-                @if ($dismissedDefectCounts->isNotEmpty())
-                    <div class="max-w-xl">
-                        <canvas id="aiOverrideChart"
-                            data-labels="{{ $dismissedDefectCounts->keys()->map(fn ($t) => str_replace('_', ' ', $t))->toJson() }}"
-                            data-values="{{ $dismissedDefectCounts->values()->toJson() }}"></canvas>
+
+                {{-- Team & Rework Tab --}}
+                <div x-show="tab === 'team'" x-cloak class="space-y-6">
+                    {{-- Rework Load & Turnaround by Station --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Rework Load & Turnaround by Station</h3>
+                        @if ($reworkStationStats->isEmpty())
+                            <p class="text-gray-500 text-sm">No rework data recorded yet.</p>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs font-medium text-gray-500 uppercase">
+                                            <th class="py-2 pr-4">Station</th>
+                                            <th class="py-2 pr-4">Assigned</th>
+                                            <th class="py-2 pr-4">Resolved</th>
+                                            <th class="py-2 pr-4">Avg. Turnaround</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @foreach ($reworkStationStats as $station => $stats)
+                                            <tr>
+                                                <td class="py-2 pr-4 font-medium text-gray-900 capitalize">{{ str_replace('_', ' ', $station) }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['total'] }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['resolved'] }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['avg_turnaround'] ?? '—' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
                     </div>
-                    @push('scripts')
-                        <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                const canvas = document.getElementById('aiOverrideChart');
-                                if (!canvas || !window.Chart) return;
-                                new window.Chart(canvas, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: JSON.parse(canvas.dataset.labels),
-                                        datasets: [{ label: 'Dismissed AI flags by defect type', data: JSON.parse(canvas.dataset.values), backgroundColor: '#ef4444' }],
-                                    },
-                                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
-                                });
-                            });
-                        </script>
-                    @endpush
-                @else
-                    <p class="text-gray-500">No dismissed defect flags recorded yet.</p>
-                @endif
+
+                    {{-- Inspector Performance --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Inspector Performance</h3>
+                        @if ($inspectorStats->isEmpty())
+                            <p class="text-gray-500 text-sm">No inspector activity recorded yet.</p>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs font-medium text-gray-500 uppercase">
+                                            <th class="py-2 pr-4">Inspector</th>
+                                            <th class="py-2 pr-4">Total Reviewed</th>
+                                            <th class="py-2 pr-4">Passed</th>
+                                            <th class="py-2 pr-4">AI Overrides</th>
+                                            <th class="py-2 pr-4">Override Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @foreach ($inspectorStats as $inspector)
+                                            <tr>
+                                                <td class="py-2 pr-4 font-medium text-gray-900">{{ $inspector['name'] }}</td>
+                                                <td class="py-2 pr-4">{{ $inspector['total'] }}</td>
+                                                <td class="py-2 pr-4 text-green-600">{{ $inspector['pass'] }}</td>
+                                                <td class="py-2 pr-4">{{ $inspector['overrides'] }}</td>
+                                                <td class="py-2 pr-4">
+                                                    <span class="font-medium @if(($inspector['override_rate'] ?? 0) > 30) text-red-600 @elseif(($inspector['override_rate'] ?? 0) > 15) text-yellow-600 @else text-gray-700 @endif">
+                                                        {{ $inspector['override_rate'] ?? '—' }}%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- AI Override Analytics --}}
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">AI Override Analytics</h3>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">Reviewed Inspections</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $reviewedCount }}</div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">AI Overridden</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $overriddenCount }}</div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="text-sm text-gray-500">Override Rate</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $overrideRate }}%</div>
+                            </div>
+                        </div>
+                        @if ($dismissedDefectCounts->isNotEmpty())
+                            <div class="max-w-xl">
+                                <canvas id="aiOverrideChart"
+                                    data-labels="{{ $dismissedDefectCounts->keys()->map(fn ($t) => str_replace('_', ' ', $t))->toJson() }}"
+                                    data-values="{{ $dismissedDefectCounts->values()->toJson() }}"></canvas>
+                            </div>
+                            @push('scripts')
+                                <script>
+                                    window.initAiOverrideChart = function () {
+                                        const canvas = document.getElementById('aiOverrideChart');
+                                        if (!canvas || !window.Chart || window.Chart.getChart(canvas)) return;
+                                        new window.Chart(canvas, {
+                                            type: 'bar',
+                                            data: {
+                                                labels: JSON.parse(canvas.dataset.labels),
+                                                datasets: [{ label: 'Dismissed AI flags by defect type', data: JSON.parse(canvas.dataset.values), backgroundColor: '#ef4444' }],
+                                            },
+                                            options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+                                        });
+                                    };
+                                </script>
+                            @endpush
+                        @else
+                            <p class="text-gray-500">No dismissed defect flags recorded yet.</p>
+                        @endif
+                    </div>
+                </div>
             </div>
 
         </div>

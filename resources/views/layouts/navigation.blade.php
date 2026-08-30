@@ -15,6 +15,19 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard*')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @if (Auth::user()->role === 'product_manager')
+                        <x-nav-link :href="route('manager.batches.create')" :active="request()->routeIs('manager.batches.*')">
+                            {{ __('Create Batch') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('decision-support.index')" :active="request()->routeIs('decision-support.*')">
+                            {{ __('AI Insights') }}
+                        </x-nav-link>
+                    @elseif (Auth::user()->role === 'system_admin')
+                        <x-nav-link :href="route('admin.users.create')" :active="request()->routeIs('admin.users.*')">
+                            {{ __('Create Account') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +83,19 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard*')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            @if (Auth::user()->role === 'product_manager')
+                <x-responsive-nav-link :href="route('manager.batches.create')" :active="request()->routeIs('manager.batches.*')">
+                    {{ __('Create Batch') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('decision-support.index')" :active="request()->routeIs('decision-support.*')">
+                    {{ __('AI Insights') }}
+                </x-responsive-nav-link>
+            @elseif (Auth::user()->role === 'system_admin')
+                <x-responsive-nav-link :href="route('admin.users.create')" :active="request()->routeIs('admin.users.*')">
+                    {{ __('Create Account') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
