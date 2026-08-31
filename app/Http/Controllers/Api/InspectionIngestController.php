@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Batch;
 use App\Models\Defect;
 use App\Models\Inspection;
 use Illuminate\Http\JsonResponse;
@@ -69,6 +70,8 @@ class InspectionIngestController extends Controller
 
             return $inspection;
         });
+
+        $inspection->batch->completeIfThresholdReached();
 
         AuditLog::record('inspection.ingested', $request->user(), [
             'inspection_id' => $inspection->id,

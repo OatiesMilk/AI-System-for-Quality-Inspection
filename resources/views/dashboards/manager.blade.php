@@ -94,6 +94,7 @@
                                         <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                                             <th class="py-2 pr-4">Batch</th>
                                             <th class="py-2 pr-4">Stage</th>
+                                            <th class="py-2 pr-4">Status</th>
                                             <th class="py-2 pr-4">Expected</th>
                                             <th class="py-2 pr-4">Produced</th>
                                             <th class="py-2 pr-4">Pass</th>
@@ -105,9 +106,24 @@
                                     </thead>
                                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                                         @foreach ($batchStats as $batch)
+                                            @php
+                                                $mismatched = $batch['status'] === 'completed' && $batch['expected_pieces'] !== null && $batch['produced'] !== $batch['expected_pieces'];
+                                                $over = $mismatched && $batch['produced'] > $batch['expected_pieces'];
+                                            @endphp
                                             <tr>
                                                 <td class="py-2 pr-4 font-medium text-gray-900 dark:text-white">{{ $batch['batch_code'] }}</td>
                                                 <td class="py-2 pr-4 capitalize">{{ str_replace('_', ' ', $batch['stage']) }}</td>
+                                                <td class="py-2 pr-4 whitespace-nowrap">
+                                                    @if ($batch['status'] === 'open')
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">Open</span>
+                                                    @elseif ($mismatched)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $over ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' }}">
+                                                            {{ $over ? 'Over' : 'Under' }} ({{ $batch['produced'] }}/{{ $batch['expected_pieces'] }})
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">Completed</span>
+                                                    @endif
+                                                </td>
                                                 <td class="py-2 pr-4">{{ $batch['expected_pieces'] ?? '—' }}</td>
                                                 <td class="py-2 pr-4">{{ $batch['produced'] }}</td>
                                                 <td class="py-2 pr-4 text-green-600 dark:text-green-400">{{ $batch['pass'] }}</td>
@@ -122,8 +138,15 @@
                                                         —
                                                     @endif
                                                 </td>
-                                                <td class="py-2 pr-4">
+                                                <td class="py-2 pr-4 whitespace-nowrap">
                                                     <a href="{{ route('manager.batches.edit', $batch['id']) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium hover:underline">Edit</a>
+                                                    @if ($batch['status'] === 'open')
+                                                        <form method="POST" action="{{ route('manager.batches.close', $batch['id']) }}" class="inline" onsubmit="return confirm('Close this batch now? It has {{ $batch['produced'] }} of {{ $batch['expected_pieces'] ?? '?' }} expected pieces. New captures for this checkpoint will move on to the next open batch.');">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="ml-3 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium hover:underline">Close</button>
+                                                        </form>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

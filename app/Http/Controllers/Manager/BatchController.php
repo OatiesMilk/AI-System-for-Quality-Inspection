@@ -64,4 +64,28 @@ class BatchController extends Controller
         return redirect()->route('dashboard.manager')
             ->with('status', "Batch {$batch->batch_code} updated.");
     }
+
+    /**
+     * Manually close a batch's intake regardless of its current produced
+     * count. Needed for the under-target case (a batch that will never
+     * auto-complete because some expected pieces were damaged/discarded and
+     * never made it to the line) so the vision pipeline's FIFO queue isn't
+     * left waiting forever and can move on to the next batch.
+     */
+    public function close(Request $request, Batch $batch): RedirectResponse
+    {
+        $produced = $batch->inspections()->count();
+
+        $batch->update(['status' => 'completed']);
+
+        AuditLog::record('batch.closed', $request->user(), [
+            'batch_id' => $batch->id,
+            'batch_code' => $batch->batch_code,
+            'expected_pieces' => $batch->expected_pieces,
+            'produced' => $produced,
+        ]);
+
+        return redirect()->route('dashboard.manager')
+            ->with('status', "Batch {$batch->batch_code} closed ({$produced}/{$batch->expected_pieces} pieces).");
+    }
 }

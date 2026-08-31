@@ -10,11 +10,17 @@ use Illuminate\Http\Request;
 class BatchLookupController extends Controller
 {
     /**
-     * Resolve the most recently created batch matching a manufacturing stage,
-     * so the computer vision pipeline can always target whichever batch is
-     * currently open without being told a fixed batch_id up front. Lets a
-     * live capture session automatically pick up a newly created batch
-     * instead of needing to be restarted.
+     * Resolve the batch the vision pipeline should currently be targeting
+     * for a manufacturing stage: the oldest still-open batch for that
+     * checkpoint (a FIFO queue), not just whichever batch row is newest.
+     * This is what lets multiple batches be simultaneously in flight at
+     * different stations - e.g. a cutter starting batch 2 while batch 1 is
+     * still being checked further down the line - without the pipeline
+     * ever attributing a piece to the wrong batch. A batch stops being
+     * eligible here the moment it's completed (auto, once its produced
+     * count reaches expected_pieces, or manually closed by a manager), so
+     * the very next capture automatically picks up the next batch in the
+     * queue with no restart or manual coordination needed.
      */
     public function latest(Request $request): JsonResponse
     {
@@ -24,7 +30,8 @@ class BatchLookupController extends Controller
 
         $batch = Batch::query()
             ->where('manufacturing_stage', $validated['checkpoint'])
-            ->latest('id')
+            ->where('status', 'open')
+            ->oldest('id')
             ->first();
 
         if (! $batch) {

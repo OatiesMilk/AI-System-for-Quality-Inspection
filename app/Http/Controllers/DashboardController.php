@@ -185,6 +185,7 @@ class DashboardController extends Controller
                 'id'              => $batch->id,
                 'batch_code'      => $batch->batch_code,
                 'stage'           => $batch->manufacturing_stage,
+                'status'          => $batch->status,
                 'expected_pieces' => $batch->expected_pieces,
                 'produced'        => $produced,
                 'pass'            => $pass,

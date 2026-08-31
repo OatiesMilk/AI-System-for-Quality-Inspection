@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('manager.batches.edit');
         Route::patch('/manager/batches/{batch}', [BatchController::class, 'update'])
             ->name('manager.batches.update');
+        Route::patch('/manager/batches/{batch}/close', [BatchController::class, 'close'])
+            ->name('manager.batches.close');
 
         Route::get('/manager/decision-support', [DecisionSupportController::class, 'index'])
             ->name('decision-support.index');

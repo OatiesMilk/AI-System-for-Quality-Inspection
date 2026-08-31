@@ -173,6 +173,35 @@ class InspectionIngestApiTest extends TestCase
         $response->assertJsonValidationErrors('defects.0.confidence_score');
     }
 
+    public function test_it_auto_completes_the_batch_once_produced_pieces_reach_the_expected_count(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = Batch::create([
+            'batch_code' => 'THRESHOLD-001',
+            'production_date' => now(),
+            'manufacturing_stage' => 'pre_assembly',
+            'expected_pieces' => 2,
+        ]);
+
+        $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'image' => $this->fakeImageWithContent('one.png'),
+        ])->assertCreated();
+
+        $this->assertSame('open', $batch->fresh()->status);
+
+        $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'image' => $this->fakeImageWithContent('two.png'),
+        ])->assertCreated();
+
+        $this->assertSame('completed', $batch->fresh()->status);
+    }
+
     public function test_it_creates_an_inspection_with_no_defects(): void
     {
         $service = User::factory()->create(['role' => 'system_admin']);

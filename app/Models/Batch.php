@@ -15,6 +15,7 @@ class Batch extends Model
         'batch_code',
         'production_date',
         'expected_pieces',
+        'status',
         'manufacturing_stage',
         'created_by',
     ];
@@ -34,5 +35,23 @@ class Batch extends Model
     public function inspections(): HasMany
     {
         return $this->hasMany(Inspection::class);
+    }
+
+    /**
+     * Auto-complete this batch if its produced piece count has reached
+     * expected_pieces. Called after every inspection ingest so the "latest
+     * open batch" queue lookup naturally moves on to the next batch without
+     * needing manual coordination. No-ops for batches with no expected
+     * count set, or that are already completed.
+     */
+    public function completeIfThresholdReached(): void
+    {
+        if ($this->status === 'completed' || $this->expected_pieces === null) {
+            return;
+        }
+
+        if ($this->inspections()->count() >= $this->expected_pieces) {
+            $this->update(['status' => 'completed']);
+        }
     }
 }

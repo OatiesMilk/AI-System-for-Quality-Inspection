@@ -19,7 +19,7 @@ class BatchLookupApiTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    public function test_it_resolves_the_most_recently_created_matching_batch(): void
+    public function test_it_resolves_the_oldest_open_matching_batch_as_a_fifo_queue(): void
     {
         $service = User::factory()->create(['role' => 'system_admin']);
         Sanctum::actingAs($service, ['inspections:create']);
@@ -30,7 +30,7 @@ class BatchLookupApiTest extends TestCase
             'manufacturing_stage' => 'preparation',
         ]);
 
-        $newer = Batch::create([
+        Batch::create([
             'batch_code' => 'NEWER-001',
             'production_date' => now(),
             'manufacturing_stage' => 'preparation',
@@ -40,9 +40,34 @@ class BatchLookupApiTest extends TestCase
 
         $response->assertOk();
         $response->assertJson([
-            'batch_id' => $newer->id,
-            'batch_code' => 'NEWER-001',
+            'batch_id' => $older->id,
+            'batch_code' => 'OLDER-001',
         ]);
+    }
+
+    public function test_it_skips_completed_batches_and_falls_through_to_the_next_open_one(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        Batch::create([
+            'batch_code' => 'DONE-001',
+            'production_date' => now()->subDay(),
+            'manufacturing_stage' => 'preparation',
+            'status' => 'completed',
+        ]);
+
+        $stillOpen = Batch::create([
+            'batch_code' => 'OPEN-001',
+            'production_date' => now(),
+            'manufacturing_stage' => 'preparation',
+            'status' => 'open',
+        ]);
+
+        $response = $this->getJson('/api/batches/latest?checkpoint=preparation');
+
+        $response->assertOk();
+        $response->assertJson(['batch_id' => $stillOpen->id]);
     }
 
     public function test_it_returns_404_when_no_batch_matches(): void

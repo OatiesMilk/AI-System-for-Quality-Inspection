@@ -236,4 +236,56 @@ class ManagerDashboardTest extends TestCase
 
         $response->assertSessionHasErrors('expected_pieces');
     }
+
+    public function test_manager_can_manually_close_a_batch(): void
+    {
+        $manager = User::factory()->create(['role' => 'product_manager']);
+
+        $batch = Batch::create([
+            'batch_code' => 'CLOSE-001',
+            'production_date' => now(),
+            'expected_pieces' => 40,
+            'manufacturing_stage' => 'pre_assembly',
+        ]);
+
+        Inspection::create(['batch_id' => $batch->id, 'checkpoint' => 'pre_assembly', 'action' => 'pass', 'inspected_at' => now()]);
+
+        $response = $this->actingAs($manager)->patch("/manager/batches/{$batch->id}/close");
+
+        $response->assertRedirect(route('dashboard.manager'));
+
+        $this->assertSame('completed', $batch->fresh()->status);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'batch.closed',
+            'user_id' => $manager->id,
+        ]);
+    }
+
+    public function test_manager_dashboard_shows_batch_status_and_flags_under_produced_batches(): void
+    {
+        $manager = User::factory()->create(['role' => 'product_manager']);
+
+        Batch::create([
+            'batch_code' => 'STATUS-OPEN',
+            'production_date' => now(),
+            'expected_pieces' => 40,
+            'manufacturing_stage' => 'pre_assembly',
+        ]);
+
+        $underBatch = Batch::create([
+            'batch_code' => 'STATUS-UNDER',
+            'production_date' => now(),
+            'expected_pieces' => 40,
+            'status' => 'completed',
+            'manufacturing_stage' => 'pre_assembly',
+        ]);
+        Inspection::create(['batch_id' => $underBatch->id, 'checkpoint' => 'pre_assembly', 'action' => 'pass', 'inspected_at' => now()]);
+
+        $response = $this->actingAs($manager)->get('/manager');
+
+        $response->assertOk();
+        $response->assertSee('Open');
+        $response->assertSee('Under (1/40)');
+    }
 }

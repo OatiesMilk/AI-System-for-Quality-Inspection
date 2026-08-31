@@ -27,11 +27,11 @@ class DemoDataSeeder extends Seeder
         }
 
         $batchPlans = [
-            ['expected_pieces' => 40, 'stage' => 'pre_assembly', 'days_ago' => 0],
-            ['expected_pieces' => 35, 'stage' => 'pre_assembly', 'days_ago' => 0],
-            ['expected_pieces' => 50, 'stage' => 'pre_assembly', 'days_ago' => 1],
-            ['expected_pieces' => 30, 'stage' => 'preparation', 'days_ago' => 1],
-            ['expected_pieces' => 45, 'stage' => 'preparation', 'days_ago' => 2],
+            ['expected_pieces' => 40, 'stage' => 'pre_assembly', 'days_ago' => 0, 'status' => 'open'],
+            ['expected_pieces' => 35, 'stage' => 'pre_assembly', 'days_ago' => 0, 'status' => 'open'],
+            ['expected_pieces' => 50, 'stage' => 'pre_assembly', 'days_ago' => 1, 'status' => 'completed'],
+            ['expected_pieces' => 30, 'stage' => 'preparation', 'days_ago' => 1, 'status' => 'open'],
+            ['expected_pieces' => 45, 'stage' => 'preparation', 'days_ago' => 2, 'status' => 'completed'],
         ];
 
         foreach ($batchPlans as $index => $plan) {
@@ -41,6 +41,7 @@ class DemoDataSeeder extends Seeder
                 'batch_code' => 'BATCH-'.$date->format('Ymd').'-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
                 'production_date' => $date,
                 'expected_pieces' => $plan['expected_pieces'],
+                'status' => $plan['status'],
                 'manufacturing_stage' => $plan['stage'],
                 'created_by' => $manager->id,
             ]);
