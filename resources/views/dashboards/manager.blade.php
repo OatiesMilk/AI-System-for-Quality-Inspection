@@ -319,6 +319,40 @@
                             </ul>
                         @endif
                     </div>
+
+                    {{-- Defects by Component (pre-assembly) --}}
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">Defects by Component</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Pre-assembly shapes ranked by defect rate. Component names are placeholders until finalized.</p>
+                        @if ($componentStats->isEmpty())
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">No component-level data recorded yet.</p>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                            <th class="py-2 pr-4">Component</th>
+                                            <th class="py-2 pr-4">Inspected</th>
+                                            <th class="py-2 pr-4">Defective</th>
+                                            <th class="py-2 pr-4">Defect Rate</th>
+                                            <th class="py-2 pr-4">Most Common Defect</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        @foreach ($componentStats as $component => $stats)
+                                            <tr>
+                                                <td class="py-2 pr-4 font-medium text-gray-900 dark:text-white capitalize">{{ str_replace('_', ' ', $component) }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['total'] }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['defective_total'] }}</td>
+                                                <td class="py-2 pr-4">{{ $stats['defect_rate'] !== null ? $stats['defect_rate'].'%' : '—' }}</td>
+                                                <td class="py-2 pr-4 capitalize">{{ $stats['top_defect_type'] ? str_replace('_', ' ', $stats['top_defect_type']) : '—' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             @else
                 <div class="space-y-6">

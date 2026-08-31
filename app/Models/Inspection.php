@@ -15,6 +15,7 @@ class Inspection extends Model
         'batch_id',
         'inspector_id',
         'checkpoint',
+        'component_type',
         'image_path',
         'image_data',
         'image_mime',

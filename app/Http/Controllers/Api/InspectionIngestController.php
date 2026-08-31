@@ -19,6 +19,8 @@ class InspectionIngestController extends Controller
      * Expects a multipart/form-data request:
      * - batch_id: int, required, must reference an existing batch
      * - checkpoint: string, required, "preparation" or "pre_assembly"
+     * - component_type: string, required when checkpoint is "pre_assembly" (not used at preparation,
+     *   where every piece is the same shape) — one of config('components.types')
      * - image: file, required, the captured inspection photo
      * - defects: array, optional, each item:
      *     - defect_type: string, one of the known defect enum values
@@ -37,6 +39,10 @@ class InspectionIngestController extends Controller
                 },
             ],
             'checkpoint' => ['required', 'in:preparation,pre_assembly'],
+            'component_type' => [
+                'nullable', 'required_if:checkpoint,pre_assembly',
+                'in:'.implode(',', config('components.types')),
+            ],
             'image' => ['required', 'image', 'max:10240'],
             'defects' => ['array'],
             'defects.*.defect_type' => ['required_with:defects', 'in:scratch,cut,hole,crease,glue,stitch'],
@@ -57,12 +63,13 @@ class InspectionIngestController extends Controller
 
         $inspection = DB::transaction(function () use ($validated, $imageData, $imageMime, $autoAction, $defectList) {
             $inspection = Inspection::create([
-                'batch_id'    => $validated['batch_id'],
-                'checkpoint'  => $validated['checkpoint'],
-                'image_data'  => $imageData,
-                'image_mime'  => $imageMime,
-                'action'      => $autoAction,
-                'inspected_at'=> $autoAction !== null ? now() : null,
+                'batch_id'       => $validated['batch_id'],
+                'checkpoint'     => $validated['checkpoint'],
+                'component_type' => $validated['component_type'] ?? null,
+                'image_data'     => $imageData,
+                'image_mime'     => $imageMime,
+                'action'         => $autoAction,
+                'inspected_at'   => $autoAction !== null ? now() : null,
             ]);
 
             foreach ($defectList as $defect) {

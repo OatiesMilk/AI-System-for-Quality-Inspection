@@ -76,6 +76,7 @@ class InspectionIngestApiTest extends TestCase
         $response = $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
             'checkpoint' => 'pre_assembly',
+            'component_type' => 'component_a',
             'image' => $image,
             'defects' => [
                 [
@@ -206,6 +207,7 @@ class InspectionIngestApiTest extends TestCase
         $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
             'checkpoint' => 'pre_assembly',
+            'component_type' => 'component_a',
             'image' => $this->fakeImageWithContent('one.png'),
         ])->assertCreated();
 
@@ -214,10 +216,66 @@ class InspectionIngestApiTest extends TestCase
         $this->postJson('/api/inspections', [
             'batch_id' => $batch->id,
             'checkpoint' => 'pre_assembly',
+            'component_type' => 'component_a',
             'image' => $this->fakeImageWithContent('two.png'),
         ])->assertCreated();
 
         $this->assertSame('completed', $batch->fresh()->status);
+    }
+
+    public function test_it_requires_a_component_type_at_the_pre_assembly_checkpoint(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = $this->makeBatch();
+
+        $response = $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'image' => $this->fakeImageWithContent(),
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('component_type');
+    }
+
+    public function test_it_rejects_an_invalid_component_type(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = $this->makeBatch();
+
+        $response = $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'component_type' => 'not-a-real-component',
+            'image' => $this->fakeImageWithContent(),
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('component_type');
+    }
+
+    public function test_it_does_not_require_a_component_type_at_the_preparation_checkpoint(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = Batch::create([
+            'batch_code' => 'API-'.fake()->unique()->numerify('###'),
+            'production_date' => now(),
+            'manufacturing_stage' => 'preparation',
+        ]);
+
+        $response = $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'preparation',
+            'image' => $this->fakeImageWithContent(),
+        ]);
+
+        $response->assertCreated();
     }
 
     public function test_it_creates_an_inspection_with_no_defects(): void

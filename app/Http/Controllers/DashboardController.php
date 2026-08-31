@@ -262,6 +262,43 @@ class DashboardController extends Controller
                 ],
             ]);
 
+        // Defects by component (pre_assembly only) — which shape produces the
+        // most defects, and what type. Component names are placeholders until
+        // the real shoe component set is finalized (see config/components.php).
+        $componentTotals = Inspection::query()
+            ->where('checkpoint', 'pre_assembly')
+            ->whereNotNull('component_type')
+            ->selectRaw('component_type, count(*) as total')
+            ->groupBy('component_type')
+            ->pluck('total', 'component_type');
+
+        $componentDefectiveCounts = Defect::query()
+            ->join('inspections', 'defects.inspection_id', '=', 'inspections.id')
+            ->whereNotNull('inspections.component_type')
+            ->selectRaw('inspections.component_type, count(distinct defects.inspection_id) as defective_total')
+            ->groupBy('inspections.component_type')
+            ->pluck('defective_total', 'component_type');
+
+        $componentDefectTypeCounts = Defect::query()
+            ->join('inspections', 'defects.inspection_id', '=', 'inspections.id')
+            ->whereNotNull('inspections.component_type')
+            ->selectRaw('inspections.component_type, defects.defect_type, count(*) as total')
+            ->groupBy('inspections.component_type', 'defects.defect_type')
+            ->get()
+            ->groupBy('component_type');
+
+        $componentStats = $componentTotals->map(function ($total, $component) use ($componentDefectiveCounts, $componentDefectTypeCounts) {
+            $defectiveTotal = $componentDefectiveCounts->get($component, 0);
+            $topDefect = $componentDefectTypeCounts->get($component, collect())->sortByDesc('total')->first();
+
+            return [
+                'total'           => $total,
+                'defective_total' => $defectiveTotal,
+                'defect_rate'     => $total > 0 ? round(($defectiveTotal / $total) * 100, 1) : null,
+                'top_defect_type' => $topDefect?->defect_type,
+            ];
+        })->sortByDesc('defective_total');
+
         // Rework load and turnaround time by responsible station
         $reworkStationStats = Inspection::where('action', 'rework')
             ->whereNotNull('rework_station')
@@ -322,6 +359,7 @@ class DashboardController extends Controller
             'hourlySpikes',
             'spikeHours',
             'checkpointStats',
+            'componentStats',
             'reworkStationStats',
             'inspectorStats',
             'topInsight',
