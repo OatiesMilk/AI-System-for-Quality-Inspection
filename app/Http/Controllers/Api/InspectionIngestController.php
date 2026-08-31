@@ -28,7 +28,14 @@ class InspectionIngestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'batch_id' => ['required', 'integer', 'exists:batches,id'],
+            'batch_id' => [
+                'required', 'integer', 'exists:batches,id',
+                function ($attribute, $value, $fail) {
+                    if (Batch::find($value)?->status === 'completed') {
+                        $fail('This batch is already closed and can no longer receive pieces.');
+                    }
+                },
+            ],
             'checkpoint' => ['required', 'in:preparation,pre_assembly'],
             'image' => ['required', 'image', 'max:10240'],
             'defects' => ['array'],

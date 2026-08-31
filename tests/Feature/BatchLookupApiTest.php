@@ -89,4 +89,58 @@ class BatchLookupApiTest extends TestCase
 
         $response->assertUnprocessable();
     }
+
+    public function test_the_operator_can_close_the_batch_they_are_working(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = Batch::create([
+            'batch_code' => 'OP-CLOSE-001',
+            'production_date' => now(),
+            'expected_pieces' => 40,
+            'manufacturing_stage' => 'preparation',
+        ]);
+
+        $response = $this->patchJson("/api/batches/{$batch->id}/close");
+
+        $response->assertOk();
+        $response->assertJson([
+            'batch_id' => $batch->id,
+            'status' => 'completed',
+            'produced' => 0,
+        ]);
+
+        $this->assertSame('completed', $batch->fresh()->status);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'batch.closed',
+            'user_id' => $service->id,
+        ]);
+    }
+
+    public function test_closing_a_batch_immediately_advances_the_queue_to_the_next_open_batch(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $current = Batch::create([
+            'batch_code' => 'QUEUE-A',
+            'production_date' => now()->subDay(),
+            'manufacturing_stage' => 'preparation',
+        ]);
+
+        $next = Batch::create([
+            'batch_code' => 'QUEUE-B',
+            'production_date' => now(),
+            'manufacturing_stage' => 'preparation',
+        ]);
+
+        $this->patchJson("/api/batches/{$current->id}/close")->assertOk();
+
+        $response = $this->getJson('/api/batches/latest?checkpoint=preparation');
+
+        $response->assertOk();
+        $response->assertJson(['batch_id' => $next->id]);
+    }
 }

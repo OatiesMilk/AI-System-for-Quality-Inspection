@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Batch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,36 @@ class BatchLookupController extends Controller
             'batch_id' => $batch->id,
             'batch_code' => $batch->batch_code,
             'manufacturing_stage' => $batch->manufacturing_stage,
+        ]);
+    }
+
+    /**
+     * Let the operator running the capture station close out the batch
+     * they're currently working, the moment they physically know it's
+     * done - regardless of whether the piece count landed exactly on
+     * expected_pieces. They're the one who actually knows a roll is
+     * finished, not the manager watching a dashboard, so this is the
+     * primary way batches get closed; the manager's own close action is
+     * just a fallback for when this didn't happen.
+     */
+    public function close(Request $request, Batch $batch): JsonResponse
+    {
+        $produced = $batch->forceClose();
+
+        AuditLog::record('batch.closed', $request->user(), [
+            'batch_id' => $batch->id,
+            'batch_code' => $batch->batch_code,
+            'expected_pieces' => $batch->expected_pieces,
+            'produced' => $produced,
+            'closed_via' => 'vision_pipeline',
+        ]);
+
+        return response()->json([
+            'batch_id' => $batch->id,
+            'batch_code' => $batch->batch_code,
+            'status' => $batch->status,
+            'expected_pieces' => $batch->expected_pieces,
+            'produced' => $produced,
         ]);
     }
 }

@@ -54,4 +54,19 @@ class Batch extends Model
             $this->update(['status' => 'completed']);
         }
     }
+
+    /**
+     * Close this batch's intake now, regardless of its current produced
+     * count. Returns the produced count at the moment of closing, for
+     * callers to log/report. Used by both the manager's manual override and
+     * the vision pipeline's operator-triggered "finish batch" action.
+     */
+    public function forceClose(): int
+    {
+        $produced = $this->inspections()->count();
+
+        $this->update(['status' => 'completed']);
+
+        return $produced;
+    }
 }

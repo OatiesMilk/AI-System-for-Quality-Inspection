@@ -20,4 +20,6 @@ Route::middleware(['auth:sanctum', 'abilities:inspections:create', 'throttle:60,
         ->name('api.inspections.store');
     Route::get('/batches/latest', [BatchLookupController::class, 'latest'])
         ->name('api.batches.latest');
+    Route::patch('/batches/{batch}/close', [BatchLookupController::class, 'close'])
+        ->name('api.batches.close');
 });

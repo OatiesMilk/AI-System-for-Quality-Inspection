@@ -133,6 +133,24 @@ class InspectionIngestApiTest extends TestCase
         $response->assertJsonValidationErrors('batch_id');
     }
 
+    public function test_it_rejects_a_piece_submitted_to_an_already_closed_batch(): void
+    {
+        $service = User::factory()->create(['role' => 'system_admin']);
+        Sanctum::actingAs($service, ['inspections:create']);
+
+        $batch = $this->makeBatch();
+        $batch->update(['status' => 'completed']);
+
+        $response = $this->postJson('/api/inspections', [
+            'batch_id' => $batch->id,
+            'checkpoint' => 'pre_assembly',
+            'image' => UploadedFile::fake()->create('inspection.jpg', 50, 'image/jpeg'),
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('batch_id');
+    }
+
     public function test_it_rejects_an_invalid_defect_type(): void
     {
         $service = User::factory()->create(['role' => 'system_admin']);
